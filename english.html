@@ -1,0 +1,4733 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Globish 客製化學習</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Roboto', 'Noto Sans TC', sans-serif; }
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card-container { perspective: 1000px; }
+        .card-inner { transition: transform 0.6s; transform-style: preserve-3d; }
+        .card-front, .card-back { backface-visibility: hidden; }
+        .card-back { transform: rotateY(180deg); }
+        .is-flipped .card-inner { transform: rotateY(180deg); }
+        
+        .custom-input { width: 100%; padding: 0.5rem; border: 2px solid #e2e8f0; border-radius: 0.5rem; font-weight: bold; color: #334155; outline: none; transition: border-color 0.2s; }
+        .custom-input:focus { border-color: #2563eb; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+    <div id="view-start" class="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
+        <div class="bg-white p-6 rounded-3xl shadow-xl max-w-sm w-full space-y-5">
+            <div class="text-center">
+                <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="book-open" class="w-7 h-7 text-blue-600"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-800">學習設定</h1>
+                <p class="text-xs text-slate-400 mt-1">請設定本次學習範圍</p>
+            </div>
+            <hr class="border-slate-100">
+            <div class="space-y-4">
+                <div class="input-group">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-bold text-slate-500">選擇單字庫</label>
+                        <span id="list-info" class="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full opacity-0 transition-opacity">共 0 單字</span>
+                    </div>
+                    <select id="source-select" onchange="app.handleSourceChange()" class="custom-input bg-white">
+                        <option value="list1">你阿媽也會英文</option>
+                        <option value="list2">阿公用英文跟我吵架</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 mb-1 block">起始 ID</label>
+                        <input type="number" id="range-start" class="custom-input">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 mb-1 block">結束 ID</label>
+                        <input type="number" id="range-end" class="custom-input">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 mb-1 block">本次測驗單字量</label>
+                    <input type="number" id="limit-count" class="custom-input" placeholder="例如: 20">
+                    <p class="text-[10px] text-slate-400 mt-1 text-right">*已預設填入清單總數</p>
+                </div>
+            </div>
+            <button onclick="app.start()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold active:scale-95 transition-transform flex items-center justify-center shadow-lg shadow-blue-200">
+                <i data-lucide="play" class="w-4 h-4 mr-2"></i> 開始學習
+            </button>
+        </div>
+    </div>
+
+    <div id="view-complete" class="hidden min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div class="bg-white p-8 rounded-2xl shadow-lg text-center max-w-xs w-full">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="check" class="w-8 h-8 text-green-500"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">任務完成！</h2>
+            <button onclick="window.location.reload()" class="bg-blue-600 text-white px-6 py-2 rounded-lg flex items-center justify-center w-full gap-2">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> 回到首頁
+            </button>
+        </div>
+    </div>
+
+    <div id="view-main" class="hidden min-h-screen flex flex-col items-center pt-4 px-4 max-w-md mx-auto w-full">
+        <div class="w-full flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm">
+            <div class="flex items-center gap-2 text-sm font-bold text-slate-600">
+                <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-500"></i>
+                <span id="progress-text">0 / 0</span>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="app.nextCard()" class="p-2 bg-slate-100 rounded-full text-slate-400">
+                    <i data-lucide="skip-forward" class="w-4 h-4"></i>
+                </button>
+                <button id="btn-autoplay" onclick="app.toggleAutoPlay()" class="p-2 rounded-full bg-blue-100 text-blue-600">
+                    <i data-lucide="volume-2" class="w-4 h-4"></i>
+                </button>
+                <button onclick="app.toggleSettings()" class="p-2 bg-slate-100 rounded-full text-slate-600">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="settings-menu" class="hidden w-full bg-white p-4 rounded-xl shadow-md mb-4 grid grid-cols-3 gap-2 border border-slate-200">
+            <button onclick="app.setMode('flashcard')" class="mode-btn p-2 rounded-lg text-xs font-bold bg-blue-600 text-white" data-mode="flashcard">背單字</button>
+            <button onclick="app.setMode('spelling')" class="mode-btn p-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-500" data-mode="spelling">拼字測驗</button>
+            <button onclick="app.setMode('quiz')" class="mode-btn p-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-500" data-mode="quiz">選擇題</button>
+        </div>
+
+        <div id="content-area" class="flex-1 w-full flex flex-col justify-center mb-6 relative">
+            
+            <div id="mode-flashcard" class="w-full hidden">
+                <div id="flashcard-body" onclick="app.flipCard()" class="card-container cursor-pointer w-full aspect-[4/5]">
+                    <div id="flashcard-inner" class="card-inner relative w-full h-full bg-white rounded-3xl shadow-xl border-b-4 border-slate-200 text-slate-800">
+                        <div class="card-front absolute w-full h-full flex flex-col items-center justify-center p-6 text-center backface-hidden">
+                            <h2 id="fc-word" class="text-5xl font-bold mb-4">Word</h2>
+                            <span id="fc-pos" class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-bold">n.</span>
+                            <button onclick="event.stopPropagation(); app.speakCurrent()" class="mt-8 p-3 bg-slate-50 rounded-full text-slate-400">
+                                <i data-lucide="volume-2" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                        <div class="card-back absolute w-full h-full flex flex-col p-6 text-left bg-slate-800 text-white rounded-3xl backface-hidden">
+                             <div class="flex justify-between items-center mb-6">
+                                <h3 id="fc-back-word" class="text-2xl font-bold">Word</h3>
+                                <button onclick="event.stopPropagation(); app.speakCurrent()"><i data-lucide="volume-2" class="w-5 h-5 text-slate-400"></i></button>
+                            </div>
+                            <div class="bg-white/10 p-4 rounded-xl mb-4">
+                                <p id="fc-def" class="text-lg font-medium">Definition</p>
+                            </div>
+                            <div class="bg-white/10 p-4 rounded-xl">
+                                <p id="fc-sentence" class="text-sm opacity-90 mb-2">Sentence</p>
+
+                                <p id="fc-trans" class="text-xs opacity-60">Translation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="rating-area" class="grid grid-cols-4 gap-2 mt-4 w-full hidden">
+                    <button onclick="app.rate(0)" class="bg-red-100 text-red-600 py-3 rounded-xl font-bold text-sm">忘記</button>
+                    <button onclick="app.rate(1)" class="bg-orange-100 text-orange-600 py-3 rounded-xl font-bold text-sm">困難</button>
+                    <button onclick="app.rate(2)" class="bg-green-100 text-green-600 py-3 rounded-xl font-bold text-sm">良好</button>
+                    <button onclick="app.rate(3)" class="bg-blue-100 text-blue-600 py-3 rounded-xl font-bold text-sm">簡單</button>
+                </div>
+            </div>
+
+            <div id="mode-quiz" class="w-full bg-white rounded-3xl shadow-xl p-6 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="quiz-word" class="text-3xl font-bold text-slate-800">Word</h2>
+                    <button onclick="app.speakCurrent()" class="p-2 bg-green-100 text-green-600 rounded-full"><i data-lucide="volume-2" class="w-5 h-5"></i></button>
+                </div>
+                <div id="quiz-options" class="space-y-3"></div>
+                <div id="quiz-feedback" class="mt-4 text-center text-slate-400 text-sm hidden animate-pulse">顯示正確答案中...</div>
+            </div>
+
+            <div id="mode-spelling" class="w-full bg-white rounded-3xl shadow-xl p-6 flex flex-col items-center hidden">
+                <button onclick="app.speakCurrent()" class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-6 active:scale-95 transition-transform">
+                    <i data-lucide="volume-2" class="w-10 h-10 text-purple-600"></i>
+                </button>
+                <p id="sp-def" class="text-slate-500 mb-6 text-center">Definition</p>
+                <form onsubmit="app.handleSpelling(event)" class="w-full">
+                    <input id="sp-input" type="text" class="w-full text-center text-2xl font-bold border-2 border-slate-200 rounded-xl py-3 mb-4 outline-none focus:border-purple-500" placeholder="輸入單字..." autocomplete="off">
+                    <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-xl font-bold">送出</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+const DATA_SOURCES = {
+  list1: `
+01. a (art.) 個
+I'd like to have a cat.
+我想要養一隻貓。
+02. able (adj.) 能夠的
+Tom is able to go to Hong Kong in March.
+湯姆在3月能去香港。
+03. about (prep.) 關於
+What is this letter about?
+這封信是關於甚麼呢?
+04. above (prep.) 在...之上
+The air conditioner is above the window.
+冷氣在窗戶上面。
+05. accept (v.) 接受
+Unfortunately, I am unable to accept your invitation.
+很不幸地,我無法接受您的邀請。
+06. according (to) (prep.) 根據
+According to Pam, the meeting will start at 2:00pm.
+根據 Pam 的說法,會議將在下午兩點開始。
+07. account (n.) 存款帳戶
+I need to open a new bank account.
+我需要開一個新的帳戶銀行。
+08. accuse (v.) 控訴
+Phil accused Marsha of breaking the printer.
+菲爾指控馬莎弄壞印表機。
+09. achieve (v.) 成就
+We can achieve our desired results if we work as a team.
+如果我們以團隊合作,就可以達到我們的預期的結果。
+10. across (prep.) 橫越
+The bank is across the street from the gym.
+銀行是在體育館對面。
+11. act (v.) 行
+If we don't act now, it will be too late.
+如果我們現在不行動就太晚了。
+12. adapt (v.) 適應
+It is not always easy to adapt to a new environment.
+適應一個新的環境總是不容易的。
+13. add (v.) 增加
+Three new students were added to the class.
+三位新同學增加到這個班。
+14. admit (v.) 准入
+Only employees are admitted past this point.
+只有員工能通過這個點。
+15. adult (n.) 成人
+Four adults went on the field trip with the elementary school.
+四個成人和這所小學合作田野勘查。
+16. advertisement (n.) 廣告
+Online advertisements are annoying.
+線上廣告是很討厭的。
+17. advise (v.) 勸告
+I'd advise you not to insist on your way all the time.
+我會建議你別太堅持。
+18. affect (v.) 影響
+This medicine affects your ability to drive, so please be careful.
+這藥會影響你開車,請小心。
+19. afraid (adj.) 害怕的
+My little sister is afraid of the dark.
+我妹妹怕黑。
+20. after (prep.) 在...之後
+After we go to the supermarket, we are going to stop and get some ice cream.
+去市場之後,我們停下來吃冰淇淋。
+21. again (adv.) 再一次
+I can't believe it's already time to get my haircut again.
+我不敢相信我已經又要去剪頭髮了。
+22. against (prep.) 相對於
+It will be exciting to watch the Monkeys play against the Lions in the baseball game.
+我迫不及待想看猿隊對上獅隊的棒球賽。
+23. age (n.) 年齡
+She could drive at the age of 15.
+她15歲才能開車。
+24. agency (n.) 代理所
+Susan needs to contact the agency in charge of visas.
+Susan 需要聯繫該負責簽證的機構。
+25. ago (adv.) ...之前
+I came to Taiwan fifteen years ago.
+我15年前來過台灣。
+26. agree (v.) 同意
+Both David and Mike agree that we need to change the title of the report.
+David 和 Mike 兩人都同意更改報告的標題。
+27. ahead (adv.) 在前面
+The university is straight ahead on the left.
+這間大學在前方的左側。
+28. aid (n.) 幫助
+It is important to know first aid.
+第一時間急救是非常重要的。
+29. aim (v.) 致力於
+Let's aim for four new stores opening by the end of next year.
+我們就把目標放在明年年底前開四家新門市。
+30. air (n.) 空氣
+The air here is really dry.
+這裡的空氣真的非常乾燥。
+31. alive (adj.) 活的;有活力的
+Extreme sports, like hang gliding, often make people feel alive.
+像滑翔翼這樣的極限運動,最能讓人感覺到活著。
+32. all (adv.) 全部
+We are all going to visit the capital together.
+我們大家一起去參觀首都。
+33. allow (v.) 允許
+The children were not allowed to eat candy after dinner.
+小孩子不被允許在晚飯後吃糖果。
+34. ally (v.) 同盟
+The Kingdom of Swaziland is considered one of Taiwan's diplomatic allies.
+史瓦濟蘭王國被認為是台灣外交上的盟友之一。
+35. almost (adv.) 幾乎
+When this chapter is complete, Caleb will almost be done with his thesis.
+完成了這一章 Caleb 幾乎完成他的論文了。
+36. alone (adj.) 單獨的
+He often feels lonely when he's alone.
+他經常在獨處時感到寂寞。
+37. along (prep.) 沿著
+If you walk along this street for about ten minutes, you'll eventually reach the coastline.
+沿著這條路走十分鐘,你將會到達海岸線。
+38. already (adv.) 已經
+I've already told you many times the answer to that question.
+這個問題的答案我已經告訴你很多次了。
+39. also (adv.) 也
+In addition to visiting Germany and Italy, Sam is also going to make a stop in France.
+除了參觀德國和義大利,Sam 也會在法國落腳。
+40. although (conj.) 雖然
+Although I can't attend your wedding, I'd still like to give you this gift.
+雖然不能參加你的婚禮,我還是想給你這份禮物。
+41. always (adv.) 總是
+She is always on time.
+她總是準時。
+42. among (prep.) 在...之中
+A Taiwanese athlete was among the first to compete.
+一名台灣的運動員在競爭領先群當中。
+43. amount (n.) 總數
+What was the total amount spent on decorations for the festival?
+花在節日裝飾品上的總額是多少?
+44. and (conj.) 和
+I have been to Thailand and Malaysia.
+我曾去過泰國和馬來西亞。
+45. anger (n.) 怒氣
+Small children need to be taught how to control their anger.
+小孩子需要學習如何控制自己的憤怒。
+46. angle (n.) 角度
+I like the angle of this picture.
+我喜歡這張照片拍攝的角度。
+47. announce (v.) 宣布
+The flight attendant announced over the loudspeaker that the flight would be delayed for twenty-five minutes.
+空服員用擴音器宣布該航班將延誤25分鐘。
+48. another (pron.) 另一個
+Since this meeting room is reserved, we'll get another.
+由於這間會議室已被預約,我們將使用另一間會議室。
+49. answer (n.) 解答
+We are eagerly awaiting his answer.
+我們正熱切地等待他的回答。
+50. any (adj.) 任一個
+Even though it was my birthday, I didn't get to eat any of the cake.
+即使是我的生日,但我並沒吃到什麼蛋糕。
+51. apartment (n.) 公寓
+They recently signed a lease on a small apartment in Kaohsiung.
+他們最近在高雄簽約租了間小公寓。
+52. apologize (v.) 道歉
+Everyone was surprised when Crystal openly apologized for her bad attitude.
+大家都對 Crystal 公開為態度不好道歉而感到驚訝。
+53. appeal (v.) 請求
+The family is appealing the court's ruling in this case.
+這個家庭對法院的判決提出上訴。
+54. appear (v.) 出現
+This problem first appeared two years ago.
+這個問題最先於兩年前出現。
+55. apple (n.) 蘋果
+There are many varieties of apples; some are good for baking, while others are great eaten raw.
+蘋果有許多品種,一些適用於烘培,而其他適合直接吃。
+56. apply (v.) 申請
+Bethany applied to three different universities.
+Bethany 申請了三所不同的大學。
+57. appoint (v.) 任用
+Mr. Lee has been appointed as the new chairman.
+李先生已經被指定為新的主席。
+58. approve (v.) 同意
+The accounting office will not approve the recent budget changes.
+會計室將否決最近的預算變更。
+59. area (n.) 地區
+The coastal area suffered great loss during the recent typhoon.
+海岸地區在最近的颱風期間遭受了不少損失。
+60. argue (v.) 爭吵
+Please don't argue about this matter any longer; it's not worth it.
+請不要再爭論這件事了,它不值得。
+61. arm (n.) 手臂
+Katherine broke her arm last week.
+凱瑟琳上星期弄斷了她的手臂。
+62. army (n.) 軍隊
+The Russian army is conducting practice drills to scare their enemy.
+為了恐嚇他們的敵人,俄羅斯軍隊正在實地演練。
+63. around (adj.) 在周圍
+The supermarket is around the corner from the gym.
+超級市場在建身房附近的轉角處。
+64. arrest (v.) 逮捕
+The suspect was arrested after a long police chase.
+嫌疑犯在警察長時間的追捕下被逮捕。
+65. arrive (v.) 到達
+We will arrive in Korea tomorrow evening.
+我們將於明天晚上抵達韓國。
+66. art (n.) 藝術
+Charles signed up for art classes so he could learn how to paint.
+查爾斯報名藝術班,因此他會學習如何畫畫。
+67. as (conj.) 當
+As soon as I get my passport, I can apply for the visa.
+一旦我得到我的護照就能申請簽證。
+68. ask (v.) 問;要求
+Please ask the travel agent to confirm the flight times.
+請要求旅行社確定班機時間。
+69. assist (v.) 幫忙
+The flight attendant assisted the mother with the young baby.
+空服員協助了母親和小嬰兒。
+70. at (prep.) 在
+We are going to meet at the cafe on the corner at 7:00pm.
+我們將於下午7:00 在轉角的咖啡館裏見面。
+71. attach (v.) 附加
+I've attached the final draft to this email.
+我把最後草稿附在這一封電子郵件。
+72. attack (n.) 攻擊
+The recent attacks have been attributed to extremists.
+最近的攻擊已經被歸因於極端分子。
+73. attempt (v.) 嘗試:試圖
+The pizza shop attempted to break the world record for largest deliverable pizza.
+比薩店以最大可以遞送的比薩來企圖打破世界紀錄。
+74. attend (v.) 出席
+All employees must attend the meeting.
+所有員工一定要參加會議。
+75. attention (n.) 注意力
+I need your attention please.
+我需要你的關注。
+76. authority (n.) 權威
+He does not have the authority to change the details of the contract.
+她沒有權力改變合約細節。
+77. automatic (adj.) 自動的
+The grocery store installed automatic doors.
+雜貨店安裝了自動門。
+78. autumn (n.) 秋天
+Autumn is my favorite season due to the cool air and gorgeous colors of changing leaves.
+由於涼爽的空氣和落葉的華麗顏色,所以秋天是我最喜愛的季節。
+79. available (adj.) 有空的
+Will you be avaliable next Tuesday morning for the conference?
+你有空出席參加下星期二的會議嗎?
+80. average (adj.) 普通的,中等的
+Keisha was an average student.
+Keisha 是個普通的學生。
+81. avoid (v.) 避免
+These mistakes could have been avoided if you had asked for help.
+如果你請求幫忙就可以避免這些失誤。
+82. awake (adj.) 醒著的
+Is the baby awake?
+小寶寶是醒著的嗎?
+83. award (n.) 獎賞
+There is a NT$10,000 award for the person who wins the competition.
+誰贏得這場比賽,就可以獲得新台幣一萬元的獎賞。
+84. away (adv.) 遠離
+The office assistant will be away for the day.
+有一天辦公室的助理將要離開。
+85. baby (n.) 寶貝
+Whose cute baby is this?
+這可愛的小寶寶是誰的?
+86. back (n.) 後面
+The restrooms are in the back of the building.
+廁所在大樓的後面。
+87. bad (adj.) 不好的
+These mangos have already gone bad.
+這些芒果已經壞掉了。
+88. bag (n.) 袋子
+The cashier put the books in a paper bag.
+收銀員把書放進紙袋裡。
+89. balance (v.) 保持...的平衡
+Students have to learn how to balance school work, family commitments, and their social lives.
+學生必須學會在功課、家庭付出和社交生活中保持平衡。
+90. ball (n.) 球
+If you toss the ball into the bucket, you can win a prize.
+如果你將球投進桶子裏,你就可以贏得獎品。
+91. ballot (n.) 選票
+Everyone eagerly waited for the ballots to be counted.
+大家熱切的等待選票被計算出來。
+92. ban (v.) 禁止
+Smoking is banned on campus.
+在學校裡吸菸是被禁止的。
+93. bank (n.) 銀行
+Nick opened a new account at the bank.
+尼克在銀行開了一個新帳戶。
+94. bar (n.) 酒吧
+Cheryl sat at the bar in the hotel until her ride arrived.
+Cheryl 坐在飯店的酒吧,直到她的車到達。
+95. barrier (n.) 障礙物
+The police put up a barrier to keep people from entering.
+警方設置了障礙物,防止人們非法入侵。
+96. base (n.) 底座
+The base of the clock is cracked.
+時鐘的底座已經裂開了。
+97. basket (n.) 籃子
+Michelle installed a new basket on her bike.
+Michelle 在她的自行車裝了一個新的籃子。
+98. bath (n.) 澡缸
+This hotel room only has a shower stall; there is no bath tub.
+這家飯店的房間只有一個淋浴間沒有浴缸。
+99. battle (n.) 戰役
+It was always a battle to get my son to take his medicine.
+我要讓我兒子吃藥總是一場大戰。
+100. be (v.) 是在
+Where will you be at 10:00 in the morning on Wednesday?
+週三早上10點你會在哪裡?
+101. bear (v.) 承受
+I can't bear it any longer--just tell me what the surprise is!
+我再也無法忍受了,驚喜到底是什麼?
+102. beat (v.) 打(擊)敗
+The Lions beat the Elephants 3 to 0 in their last game.
+獅子隊在最後一場比賽以3比0擊敗大象隊。
+103. beauty (n.) 美麗
+The beauty of the countryside is always breathtaking this time of year.
+每年的這個時候,鄉村總是有種讓人窒息的美。
+104. because (conj.) 因為
+Jia-ling needs to travel to Japan this weekend because she is going to make an important presentation there.
+Jia-ling 這週末需要前往日本,因為她將會去那裡做一個重要的演說。
+105. become (v.) 變成
+A caterpillar becomes a butterfly.
+毛毛蟲變成蝴蝶。
+106. bed (n.) 床
+What time did you go to bed last night?
+你昨晚什麼時候睡覺?
+107. beer (n.) 啤酒
+You can buy Taiwan Beer at 7-Eleven.
+你可以在7-11購買台灣啤酒。
+108. before (adv.) 以前
+Before you enter the airport you must go through security.
+在你進入機場之前,你必須經過安全檢查。
+109. begin (v.) 開始
+When will the test begin?
+測驗何時開始?
+110. behind (adv.) 在後面
+The library is behind the supermarket.
+圖書館在超市後面。
+111. believe (v.) 相信
+Many American children believe in Santa Claus.
+許多美國孩子相信聖誕老人。
+112. bell (n.) 鈴聲
+That bell means class is over.
+這鐘聲意味著下課。
+113. belong (v.) 屬於
+Do these belong to you?
+這些是你的嗎?
+114. below (prep.) 在...下面
+Most of the MRT runs below ground.
+大多數捷運在地底下運行。
+115. bend (v.) 彎曲
+I'd like a straw that bends.
+我想要一根彎曲的吸管。
+116. beside (prep.) 在旁邊
+The night stand is beside the bed.
+床頭櫃在床的旁邊。
+117. best (adj.) 最好的
+This is the best cake I've ever tasted!
+這是我吃過最好的蛋糕。
+118. betray (v.) 背叛
+Henry felt betrayed when his best friend told the class his secrets.
+亨利感覺被出賣了當他最好的朋友告訴班上他的秘密。
+119. better (adj.) 較好的
+This mop is better than that one.
+這拖把比那個更好。
+120. between (prep.) 在...之間
+The pool is between the gym and the tennis courts.
+游泳池在健身房和網球場中間。
+121. big (adj.) 大的
+How big can my carry-on suitcase be?
+我隨身攜帶的手提箱可以多大呢?
+122. bill (n.) 帳單
+They sent this bill to the wrong address.
+他們把帳單送到錯誤的地址。
+123. bird (n.) 鳥
+Steve truly enjoys bird watching.
+史蒂夫真正享受賞鳥。
+124. birth (n.) 出生
+The miracle of birth always amazes me.
+出生的奇蹟總是讓我驚訝。
+125. bit (n.) 一丁點
+Can you add a bit of oil to this chain?
+你可以這個鏈條上加一點油嗎?
+126. bite (v.) 咬
+Can I have a bite of your cake?
+能讓我咬一口你的蛋糕嗎?
+127. black (adj.) 黑色的
+That little black dog is adorable!
+這小黑狗是可愛的。
+128. blade (n.) 刀鋒
+I sharpened the blade of the knife.
+我把刀片削尖。
+129. blame (v.) 責備
+Vicky was blamed for the broken window even though she didn't break out.
+即使 Vicky 根本沒打破窗戶,她還是被指責為造成破窗的人。
+130. blank (adj.) 空白
+Please fill in all the blanks on this form.
+請填寫此表格所有的空白地方。
+131. blanket (n.) 毯子
+If you need an extra blanket, you can find one in the closet.
+如果你需要額外的毯子,你可以在衣櫥找到。
+132. bleed (v.) 流血
+Surprisingly, when she broke her leg she didn't bleed.
+另人驚訝的是,當她摔斷腿時,她的腿沒有流血。
+133. blind (adj.) 失明
+Has he always been blind or did he lose his sight as an adult?
+他是本來就失明還是成人時才失去視力?
+134. block (n.) 街區
+We live three blocks from the train station.
+我們住在離火車站的三個街區遠的地方。
+135. blood (n.) 血液
+Mei-ying donates blood many times a year.
+Mei-ying一年都會捐好幾次血。
+136. blow (v.) 吹風
+The wind was blowing quite strong last night.
+昨晚的風相當的強大。
+137. blue (adj.) 藍色的
+I think the blue coat looks nicer than the red one.
+我認為藍色外套看起來比紅色的好。
+138. board (n.) 木板
+Paul needed an extra board to finish building the bookshelves.
+Paul 需要額外的木板來完成書架。
+139. boat (n.) 船
+My grandfather's favorite place to go fishing can only be reached by boat.
+我爺爺最喜歡去釣魚的地方只能搭船去。
+140. body (n.) 身體
+After hiking Monkey Mountain yesterday, my entire body is sore.
+昨天爬山旅行之後我整個身體都酸痛。
+141. bomb (n.) 炸彈
+The bomb squad quickly disarmed the bomb found in the hotel lobby.
+炸彈隊快速的拆解在旅館大廳發現的炸彈。
+142. bone (n.) 骨骼
+Be careful! This fish had many bones.
+小心一點!這些魚有很多刺。
+143. bonus (n.) 紅利
+Every Chinese New Year we get paid a yearly bonus.
+每年中國新年我們都會拿到年終獎金。
+144. book (n.) 書
+Kali checked out three books from the public library.
+卡莉從公共圖書館借出三本書。
+145. boot (n.) 靴子
+Yu-hong put on his work boots before leaving the house.
+玉弘在離開家之前穿上了他的工作靴。
+146. border (n.) 邊界
+The border between North and South Korea is heavily guarded.
+南北韓之間的邊界戒備森嚴。
+147. born (adj.) 出生的
+Kevin's son was born this morning.
+凱文的兒子是在今早出生的。
+148. borrow (v.) 借
+Have you ever borrowed something from a neighbor?
+你曾經向鄰居借東西嗎?
+149. boss (n.) 老闆
+My boss is fair.
+我的老闆是公正的。
+150. both (adj.) 兩者
+I like both rice and noodles.
+我喜歡米飯和麵條。
+151. bottle (n.) 瓶子
+These bottles of soy sauce are brand new.
+這瓶醬油是全新的。
+152. bottom (n.) 底部
+The bottom of the box got wet, so we need to find a new place to store these items.
+盒子的底部濕了,所以我們需要找到一個新的地方來存放這些物品。
+153. box (n.) 盒子
+When you pack books, make sure you use a small box; otherwise, the boxes will be too heavy to lift.
+當你在包裝書時,確定你使用小盒子;否則盒子太重無法抬起。
+154. boy (n.) 男孩
+That boy in the red coat is my son.
+穿著紅色外套的那一個男孩是我的兒子。
+155. boycott (v.) 杯葛
+Taiwan boycotted the Olympics in 1976.
+台灣在1976年拒絕參加奧林匹克運動會。
+156. brain (n.) 頭腦
+The average human brain weighs between 1.3 and 1.4 kilograms.
+人類的腦袋平均重1.3-1.4公斤。
+157. brake (n.) 剎車
+The brakes on this rental car are brand new.
+這台租車的剎車是全新的。
+158. branch (n.) 分部;分公司
+This bank has many branches; I'm sure you can find one near you.
+這家銀行有許多分店;我相信你可以找到一個靠近你的。
+159. brave (adj.) 英勇的
+Everyone admired how brave the children were during the storm.
+每個人都欽佩在暴風雨中英勇的孩子。
+160. bread (n.) 麵包
+If my grandmother doesn't have a piece of bread at every meal, she doesn't feel full.
+如果我的祖母沒有在每次吃飯時吃到麵包,她不會覺得飽。
+161. break (v.) 折斷
+When Lucy broke her leg, the doctor said it would take at least six months to completely heal.
+當露西摔斷了腿,醫生說至少需要半年才能完全癒合。
+162. breathe (v.) 呼吸
+People with asthma sometimes have trouble breathing.
+有哮喘的人有時會呼吸困難。
+163. brick (n.) 磚塊
+The dark red bricks made the building look stately.
+紅色的磚讓整個建築物外觀看起來很堅固。
+164. bridge (n.) 橋
+There are many famous bridges in the world: such as the Golden Gate Bridge in San Francisco, Tower Bridge in London, and the Harbour Bridge in Sydney.
+在世界上有許多著名的橋樑:如舊金山的金門大橋,倫敦的塔橋,和雪梨的海港大橋。
+165. brief (adj.) 簡短的
+Let's keep this meeting brief since everyone is busy.
+因為大家都在忙,讓我們就簡短開個會。
+166. bright (adj.) 明亮的
+When you get out of the city, the stars in the sky are quite bright.
+當你出城時,天上的星星是相當光明的。
+167. bring (v.) 帶來
+Do I need to bring anything with me to the conference?
+我需要帶什麼東西到會議?
+168. broad (adj.) 寬闊
+With four lanes of traffic in both directions, this freeway is quite broad.
+這條雙向四車道的高速公路是相當廣闊的。
+169. broadcast (v.) (n.) 廣播
+This program is broadcast each evening at 6:00pm.
+這個節目是在每個晚上的下午6:00播出。
+170. brother (n.) 兄弟
+Christina has three brothers.
+克里斯蒂娜有三位兄弟。
+171. brown (adj.) 棕色的
+While Teddy-bears come in all kinds of colors, I prefer the light brown ones.
+泰迪熊有各種顏色,不過我偏愛淺咖啡色的。
+172. brush (n.) 刷子
+I prefer a round brush with soft bristles to a rectangle brush with hard, plastic bristles.
+比起硬塑膠刷毛的長方形刷子,我更喜歡有軟刷毛的圓刷。
+173. budget (n.) 預算
+We are under budget this quarter.
+我們這季的花費在預算之內。
+174. build (v.) 建造
+They are building a new parking garage behind the hospital.
+他們正在蓋醫院後面的新停車場車庫。
+175. bullet (n.) 子彈
+The bullet penetrated the target.
+子彈穿透了目標。
+176. burn (v.) 燒灼
+Careful with that hot pot; you don't want to burn yourself.
+小心那個熱壺,你應該不想要燙到你自己。
+177. burst (n.) 爆破
+Did you see that burst of light over there?
+你有看在那裏破裂的光嗎?
+178. bury (v.) 埋葬
+In years past, in America, the dead were often buried behind the local church.
+過去幾年在美國,死者通常埋葬在當地的教堂後面。
+179. business (n.) 事業
+Business has been really good this year, so all the employees are expecting nice bonuses.
+今年生意很好,所有員工正在期待優渥獎金。
+180. busy (adj.) 忙碌的
+Everyone always seems to be crazy busy with work, school, and home life.
+每個人似乎總有狂熱於工作、學校和家庭生活的時候。
+181. but (conj.) 但是
+I'd like to go to South Korea during my vacation, but I'm not sure I'll have enough money saved by then.
+我想要在我的放假期間去南韓,但是我不確定,我到時候能存下足夠的錢。
+182. butter (n.) 奶油
+Some people like to cook their toast with butter, while others like to add cool butter to their hot toast.
+一些人喜歡用奶油塗在他們的土司麵包,其他人則喜歡把冰奶油塗在他們的熱土司麵包。
+183. button (n.) (v.) 鈕釦;扣上鈕扣
+The button on this coat is not easy to button.
+這件大衣的鈕扣不容易扣好。
+184. buy (v.) 買
+We bought many supplies to prepare for the upcoming celebration.
+為了即將到來的慶典 我們買了許多物資作準備。
+185. by (prep.) 用...;以...
+The book is by the stapler.
+這本書是用訂書機裝訂的。
+186. cabinet (n.) 櫥櫃
+The cabinet in the workroom is full of copy paper and other office supplies.
+辦公室內的櫥櫃裡放滿了影印紙與其他的辦公用品。
+187. call (v.) 大叫
+When Sandra fell off her bike, she called out for help.
+當 Sandra 從她的腳踏車上摔下來時她大叫以尋求協助。
+188. calm (adj.) 鎮靜的
+In an emergency it is important to remain calm.
+在緊急的情況中保持冷靜是很重要的。
+189. camera (n.) 照相機
+The lens on this camera is excellent.
+這台照相機的鏡頭是很好的。
+190. camp (n.) 營地
+There is a famous camp just outside the national forest.
+國家公園外有一個很著名的營地。
+191. campaign (n.) (競選)活動
+Presidential campaign commercials start to run very early in an election year.
+總統選舉時的競選廣告在選舉一開始時就已經在播放。
+192. can (n.) 罐頭
+I need three cans of soup to make this dish.
+我需要三個罐頭的湯來做這道菜。
+193. cancel (v.) 取消
+The play was canceled due to lack of community support.
+由於缺乏社區支援這齣戲被迫取消。
+194. capture (v.) 抓到
+The police captured the alleged thief three hours after the crime was committed.
+警方在案發三小時後抓到涉嫌犯罪的小偷。
+195. car (n.) 汽車
+Where can I park my car downtown?
+市中心哪裡可以讓我停車。
+196. card (n.) 卡片
+My grandmother faithfully sends me a greeting card for each holiday and birthday.
+我的祖母在每個節日和生日都會寄祝賀卡片給我。
+197. care (n.) 照料
+The care I received at the hospital was great.
+我在醫院接受的照顧非常好。
+198. carriage (n.) 馬車
+There are some tourist places that give visitors carriage rides.
+有一些觀光地點讓遊客搭乘馬車。
+199. carry (v.) 攜帶
+He always carries his phone with him.
+他總是隨身攜帶著電話。
+200. case (n.) 案例
+This is a special case, so we can make an exception to the regulations.
+這是一個特殊案例,所以我們可以破例。
+201. cash (n.) 現金
+While many places accept credit cards, paying with cash is always the best option.
+雖然許多地方接受信用卡,現金支付永遠是最好的選擇。
+202. cat (v.) 貓
+Marsha's cat likes to curl up by the fire.
+馬沙的貓喜歡蜷縮在火爐旁。
+203. catch (v.) 捉住
+My daughter just learned how to catch a ball.
+我的女兒剛學會如何接球。
+204. cause (n.) 原因
+The cause of the flu outbreak is being investigated.
+流感爆發的原因正在調查中。
+205. celebrate (v.) 慶祝
+Let's celebrate your graduation with a big party.
+我們辦一個大型派對來慶祝你的畢業吧。
+206. cell (n.) 細胞
+The cell is the basic unit of all life.
+細胞是一切生命的基本單位。
+207. center (n.) 中心
+The cafeteria is in the center of the building.
+自助餐聽在這棟建築物的中心。
+208. century (n.) 世紀
+Technology has advanced greatly in the last century.
+科技在上個世紀有很大的進步。
+209. ceremony (n.) 典禮
+Our wedding ceremony will be held outdoors.
+我們的婚禮將在戶外舉行。
+210. certain (adj.) 確定
+Marcus is certain that he locked the back door.
+馬庫斯確定他把後門鎖上了。
+211. chain (n.) 鍊條
+At night, we lock the door with a chain before going to sleep.
+晚上,我們睡覺前用鎖鏈鎖門。
+212. chair (n.) 椅子
+We are going shopping for new chairs for our dining table.
+我們要去購買新的餐廳用椅。
+213. chairman (n.) 主席
+The chairman of the company will retire next month.
+該公司的主席將在下個月退休。
+214. challenge (n.) 挑戰
+Completing this project on time is going to be a huge challenge for the team.
+時間內完成這個項目對這個團隊將會是一個巨大的挑戰。
+215. champion (n.) 優勝者
+Chiao-hwa is the newest game night champion.
+巧華是遊戲之夜最新的冠軍。
+216. chance (n.) 機會
+Not many people have the chance to study overseas for free.
+有機會免費出國留學的人並不多。
+217. change (v.) 改變
+These policies need to change immediately.
+這些政策需要立即改變。
+218. channel (n.) (電視)頻道
+Can you change the channel to 42; I want to watch the game live.
+你可以切換42頻道嗎;我想要看比賽的現場直播。
+219. character (n.) 人格
+This biography gives the public insight to the president's true character.
+這傳記讓大眾了解總統真正的性格。
+220. charge (v.) 索價
+How much did the mechanic charge you to repair the brakes?
+技師修理你的煞車收了你多少錢?
+221. chart (n.) 圖表
+The chart shows the drop in profits over the past twenty years.
+這圖表顯示了過去二十年來利潤下降。
+222. chase (v.) 追逐
+Gatsby tried to chase his dream, but his life ended in sadness.
+Gatsby 嘗試追逐自己的夢想,但他的生活在悲傷中結束了。
+223. cheap (adj.) 便宜的
+They found a cheap apartment by the river.
+他們在河邊找到一間便宜的公寓。
+224. check (v.) 檢查
+Please check this over and return it to me by Monday.
+請先做完詳細檢查後,然後在星期一前交回我這裏。
+225. cheer (n.) 歡呼
+We all gave Sally a cheer when it was her turn to bat.
+輪到莎莉打擊時,我們大家都為她加油打氣。
+226. cheese (n.) 乳酪
+Her boss is hosting a wine and cheese party this Saturday.
+她的老闆將在這個星期六舉辦葡萄酒和奶酪派對。
+227. chemical (adj.) 化學的
+The company is going to build a new chemical plant in Louisiana.
+該公司打算在路易斯安那州蓋一間新的化工廠。
+228. chest (n.) 胸膛
+Nancy had a severe chest pain this morning.
+Nancy 今天早上有很嚴重的胸痛。
+229. chief (adj.) 主要的
+Martha is the government's chief negotiator.
+瑪莎是政府首席談判的代表。
+230. child (n.) 小孩
+Having a child can transform your life and bring you joy and happiness.
+有一個孩子會改變你的生活,並為你帶來歡樂和幸福。
+231. choose (v.) 選擇
+Prudence should take her time and choose a career carefully.
+Prudence 應該慢慢且懂慎地選擇她的職業。
+232. church (n.) 教堂
+The old church was filled with mourners on the day of the funeral.
+在葬禮那一天,老教堂裡充滿來哀悼的人。
+233. circle (v.) 圈出
+Please circle the correct answer.
+請圈出正確的答案。
+234. citizen (n.) 公民
+Ginny is going to move to Winnipeg and become a Canadian citizen.
+金妮是要搬到溫尼伯,成為加拿大公民。
+235. city (n.) 城市
+Carla told me that she wants to move to the city next month.
+Carla 告訴我他下個月想搬到市區。
+236. civilian (n.) 平民
+After Terence was discharged from the navy he found life as a civilian difficult.
+Terence 從海軍退役之後發現當平民的生活很困難。
+237. claim (v.) 宣稱
+Reggie claims to be an expert about wine, but I have my doubts.
+Reggie 宣稱他是品酒專家,但我懷疑不是真的。
+238. clash (v.) 牴觸;發生衝突
+Penelope's ideas and opinions often clash with mine, but we are still good friends.
+Penelope 的想法和意見經常與我的發生衝突,但我們依然是好朋友。
+239. class (n.) 班級
+Victoria is planning to take a history class this semester.
+Victoria 計畫這學期要修歷史課。
+240. clean (adj.) 乾淨的
+Kathleen put on a clean T-shirt and a pair of shorts.
+Kathleen 換上乾淨的T-shirt 和短褲。
+241. clear (adj.) 明顯的
+They had a clear advantage over the other team, but they still lost.
+他們比其他隊伍有明顯的優勢,但他們還是輸了。
+242. climate (n.) 氣候
+Arizona has a hot and dry climate.
+Arizona 有個炎熱乾燥的氣候。
+243. climb (v.) 爬
+Danny likes to climb trees and play baseball.
+Danny 喜歡爬樹和打棒球。
+244. clock (n.) 鐘
+Uncle Bill made this beautiful clock for us.
+Bill 叔叔為我們做這個漂亮的時鐘。
+245. close (v.) 關閉
+Dad reminded us to close the garage door before we left.
+爸爸提醒我們在我們離開之前要關車庫門。
+246. cloth (n.) 布
+Peggy wiped the table with a cloth and then set out all the food she had prepared.
+Peggy 用布擦了桌子,然後放上了她準備的所有食物。
+247. cloud (n.) 雲
+A large fluffy cloud drifted by as we sat together in the park.
+當我們一起坐在公園的時候,一個又大又蓬鬆的雲從我們上頭飄過。
+248. coal (n.) 煤
+Many people in China still use coal to heat their homes.
+在中國,許多人仍用煤來取暖。
+249. coast (n.) 海岸
+They took a drive along the California coast to Monterey.
+他們延著加州海岸開車到蒙特里。
+250. coat (n.) 外套
+Grace's father bought her a new coat last week.
+在上週格蕾絲的父親給她買了一件新外套。
+251. code (n.) 法條;規則
+Ellen and her sister seem to have a secret code that they often use when they want to talk privately.
+艾倫和她的妹妹想私下交談時似乎常使用一個秘密的規則。
+252. cold (adj.) 冷的
+There are some cold drinks in the kitchen.
+在廚房裡有些冷飲。
+253. collect (v.) 收集
+Samantha likes to collect stamps and postcards.
+薩曼莎喜歡收集郵票和明信片。
+254. college (n.) 大學
+Joan is planning to study at a college in New York City.
+瓊正計劃去紐約市的一所大學學習。
+255. colony (n.) 群體
+There is a large colony of ants living under that tree.
+在這棵樹下有很大一群的螞蟻居住。
+256. color (n.) 顏色
+In autumn, the forest is full of color.
+在秋季,森林是充滿色彩。
+257. combine (v.) 混合
+You need to combine some fruit juice and ginger ale to make the punch.
+你需要結合果汁和薑汁酒來完成雞尾調酒。
+258. come (v.) 來
+After an unpleasant experience overseas, Melissa decided to come home to her family.
+經過不愉快的海外經歷,梅麗莎決定回家回到他的家人身邊。
+259. comfort (n.) 舒適
+The seats in my old truck were not designed with comfort.
+我舊卡車的座椅設計的沒有很舒適。
+260. command (v.) 命令
+Many people want to command others to do things, yet few want to be the one who actually does the work.
+很多人都想命令別人做事,但很少人會成為主動去做事的人。
+261. comment (n.) 評論
+Eliza did not want to make a comment regarding the lawsuit.
+Eliza 不想做出有關訴訟的評論。
+262. committee (n.) 委員會
+The next budget committee meeting will be held on April 1st.
+下一個預算委員會會議預計在4月1號舉行。
+263. common (adj.) 普遍的
+Denise and her sister share many common interests.
+Denise 和他的妹妹有許多相同的興趣。
+264. communicate (v.) 溝通
+Despite all the new technology available, many people still fail to communicate their ideas.
+儘管有很多可用的新技術,但很多人還是無法溝通想法。
+265. community (n.) 社區
+Kevin wants to move his family to a quiet community in the suburbs.
+Kevin 想把家人搬到郊外一個安靜的社區。
+266. company (n.) 公司
+They founded a new company that sells sports shoes.
+她們創立了一家新公司銷售運動鞋。
+267. compare (v.) 比較
+It is a good idea to compare prices and features before buying a new car.
+在買一台新車前,比較它的價格和特色是一個好的想法。
+268. compete (v.) 競爭
+Emily said that she wanted to compete in the Olympics someday.
+Emily 說希望有一天她能在奧運上競賽。
+269. complete (adj.) 完全的
+This project has turned into a complete disaster.
+這個工程完完全全是個災難。
+270. compromise (n.) 妥協
+I think you and Kate should compromise and get one dog and one cat.
+我認為你應該跟 Kate 妥協各取所需。
+271. computer (n.) 電腦
+Maura wants to buy a new desktop computer.
+Maura 想買一台新的桌電。
+272. concern (n.) 擔心
+She has many concerns about the new plans for the building.
+她對這個新的建設計劃有很多擔心之處。
+273. condemn (v.) 譴責
+The local community continues to condemn the inactivity of the police.
+當地的社區繼續譴責警察的無所作為。
+274. condition (n.) 狀況
+Even though her car is over twenty years old, it is still in excellent condition.
+盡管她的車齡超過20歲,它仍然處於良好的狀況。
+275. conference (n.) 會議
+They have planned to hold an international conference here next spring.
+他們計畫明年春天在這裡舉行一場國際會議。
+276. confirm (v.) 確認
+Marcia needs to confirm the dates for the conference in April.
+Marcia 需要確認在四月份的會議日期。
+277. congratulate (v.) 恭賀
+Dora called to congratulate us on the birth of our grandson.
+Dora 打電話向我們祝賀我們孫子的誕生。
+278. congress (n.) 代表大會
+The Canadian government is planning an international congress on climate change next month.
+加拿大政府計畫下個月的一場氣候變化的國際代表大會。
+279. connect (v.) 連接
+This bridge connects this town and the next town.
+這座橋連接這個城鎮和下一個城鎮。
+280. consider (v.) 考慮
+I really think you need to seriously consider this job offer.
+我真的覺得你需要認真思考這份工作機會。
+281. consumption (n.) 消費(耗)
+Fossil fuel consumption has increased dramatically in Taiwan in recent years.
+台灣這幾年,化石燃料的消耗急遽增加。
+282. contact (n.) 聯絡人
+Your local contact in Beijing is Ms. Zhang.
+你在北京的當地聯絡人是張女士。
+283. contain (v.) 包含
+The contract contains many unacceptable items.
+這個合約包括許多不能接受的條款。
+284. continent (n.) 大陸
+Many students don't realize that Africa is a continent.
+很多學生不了解非洲是一個大陸。
+285. continue (v.) 繼續
+If you want to continue your conversation you should go outside.
+如果你想要繼續你的對話,你應該出去外面。
+286. control (v.) 控制
+It is really hard to control a toddler who is determined to do what she wants.
+要控制一個決心要做她想做的事的學步兒真的很困難。
+287. cook (v.) 煮飯
+She has to cook dinner for her family every night.
+她必須每天晚上為他的家人煮晚飯。
+288. cool (adj.) 涼爽的
+This house is nice and cool.
+這個房子不錯且又涼爽。
+289. cooperate (v.) 合作
+They are willing to cooperate with the police in their investigation.
+他們願意和警察合作調查。
+290. copy (n.) 複本
+The lawyer has a copy of the will in her briefcase.
+這位律師的包包裡有一份遺囑的複本。
+291. cork (n.) 木塞
+We couldn't pull the cork out of the bottle.
+我們無法把軟木塞從瓶子拉出來。
+292. corn (n.) 玉米
+Grace and Lucy love to eat fresh corn in the summer.
+Grace 和 Lucy 愛在夏天吃新鮮的玉蜀黍。
+293. corner (n.) 角落
+Mom told Chris to go stand in the corner after he broke the vase.
+打破了花瓶之後媽媽叫 Chris 去站到角落。
+294. correct (adj.) 正確的
+The teacher was angry because no one could give her the correct answer to the problem.
+因為沒有人給她問題的正確答案,所以老師很生氣。
+295. cost (n.) 價格
+Sarah was determined to buy the dress regardless of the cost.
+Sarah 決定不管多少錢,都要買下洋裝。
+296. cotton (n.) 棉花
+Egyptian cotton sheets are known for being made from high quality cotton.
+埃及的棉花床單以高品質的棉花而聞名。
+297. count (v.) 計算
+You can't count the number of the customers in the store.
+你無法計算在店裡的顧客人數。
+298. country (n.) 鄉下
+Diane prefers to live in the country, as it is quiet and peaceful.
+Diane 喜歡住在鄉下,因為它安靜又平和。
+299. course (n.) 課程
+Lily thinks that this course is very interesting, but I beg to differ.
+Lily 認為這堂課不錯,但我不覺得。
+300. court (n.) 法庭
+Daphne plans to spend another day at court, so she won't be able to come with us.
+Daphne 計劃改日要在法院度過,因此她將不能夠和我們一起來。
+301. cover (v.) 掩蓋
+Louise told me she is going to cover this wall with posters.
+Louise 告訴了我她要用海報蓋住這牆壁。
+302. cow (n.) 母牛
+Grace saw a cow and several sheep when she visited the farm.
+當 Grace 參觀了農場,看見了一隻母牛和幾隻綿羊。
+303. crash (n.) 衝撞
+Fortunately, Irene escaped from the crash with only a few minor injuries.
+幸運的是,Irene以僅僅幾個小傷口而逃離車禍撞擊。
+304. create (v.) 創造
+Chloe wants to create a whole new studio in this part of the building.
+Chloe 想在這建築的一個區域裡創造一個全新的工作室。
+305. credit (v.) 存入(錢)
+Cora told me that they will credit my account instead of giving me a refund.
+Cora 告訴了我,他們將把錢存入我的帳戶而不是給我退費。
+306. crew (n.) 全體工作人員
+We have a very talented and experienced crew on duty this evening.
+我們今晚有一組有才幹和有經驗的工作人員來值班。
+307. crime (n.) 罪刑
+Ivy told me it is a crime to keep this information from the police.
+Ivy 告訴我對警察隱瞞這訊息是一種罪行。
+308. crisis (n.) 危機
+I face a new crisis each evening when I return home from work.
+每天晚上當我下班回家我都面臨新的危機。
+309. criteria (n.) 標準
+Maureen developed a new criteria for evaluating the job applicants.
+Maureen 為了評估求職者研製了新的標準。
+310. criticize (v.) 批評
+Toby is always quick to criticize but slow to take responsibility.
+Toby 總是動不動就批評,但很慢的去承擔責任。
+311. crop (n.) 收穫;作物
+The farmers struggled to find a good cash crop.
+農民們在努力尋找高價值作物。
+312. cross (v.) 橫越
+Emily has to cross the river before she can get to Pittsburgh.
+Emily 在她到匹茲堡之前必須橫越河流。
+313. crowd (n.) 群眾
+Natalie noticed that a large crowd had gathered near the entrance.
+納塔莉注意到很多群眾在入口附近聚集。
+314. crush (v.) 壓碎
+Ginny and her husband told us to crush these grapes with our feet.
+Ginny 和她的丈夫告訴我們用我們的腳壓碎這些葡萄。
+315. cry (v.) 哭
+Lauren refused to cry at the funeral.
+Lauren 拒絕在葬禮哭。
+316. culture (n.) 文化
+Eva is quite interested in Japanese culture.
+伊娃對日本文化相當感興趣。
+317. cup (n.) 杯子
+Clarissa loves to drink a cup of hot coffee on cold winter mornings.
+Clarissa 愛在寒冷的冬天早晨喝一杯熱咖啡。
+318. cure (v.) 治癒
+Getting drunk can't help you to cure any of your problems.
+喝醉了不會幫助你治療任何問題。
+319. current (adj.) 現在的;流行的
+Cindy is very concerned about the current state of the stock market.
+Cindy 非常關心股票市場的現況。
+320. custom (n.) 習俗
+It is still a custom in that country for parents to arrange marriages for their children.
+在那個國家,父母為他們的孩子安排婚姻仍舊是一個習俗。
+321. cut (n.) 傷口
+Mom put a bandage on the small cut on Jeremy's hand.
+媽媽在 Jeremy 手上的小傷口上貼了一塊OK繃。
+322. damage (n.) 毀壞
+The firefighters looked at the damage that had been caused by the fire.
+消防隊員查看了火災造成的損害。
+323. dance (v.) 跳舞
+Lucia loves to dance whenever she hears a great new song.
+每當露西亞聽到很棒的新歌時,她就喜歡翩翩起舞。
+324. danger (n.) 危險
+The soldiers showed no fear about the danger that would soon face them.
+在士兵們對他們即將面臨的危險一點都不怕。
+325. dark (adj.) 黑的
+His sister has long dark hair and a shy personality.
+他的姊妹有長長的黑頭髮和害羞的個性。
+326. date (n.) 日期
+On this date, in 1989, Heather's parents were married.
+Heather 的父母親在1989年的這一天結婚。
+327. daughter (n.) 女兒
+My daughter Grace is going to study dance in Paris next summer.
+我的女兒 Grace 將在明年夏天到巴黎學習跳舞。
+328. day (n.) 白天
+Mandy prefers working at night and sleeping during the day.
+Mandy 偏好晚上工作白天睡覺。
+329. dead (adj.) 死了
+He phoned to tell me about the dead parrot in front of his house.
+他打電話來告訴我關於他家門前的死鸚鵡。
+330. deaf (adj.) 耳聾
+Joyce's grandmother was born deaf.
+Joyce 的祖母出生就耳聾。
+331. deal (n.) 數量
+Anna's brother spent a great deal of money restoring this old Ford.
+Anna 的弟弟花了大量的金錢修復這台老福特。
+332. dear (adj.) 親愛的
+Keith prepared a large breakfast for his dear sweet wife.
+Keith 為他心愛的妻子準備了豐盛的早餐。
+333. debate (v.) 辯論
+I would never want to debate Denise because she is so smart.
+我絕對不會想跟 Denise 辯論,因為她太聰明了。
+334. debt (n.) 債
+Clyde is now working at the pizza shop on weekends so that he can get out of debt.
+Clyde 現在週末在披薩店工作,這樣他就可以擺脫債務。
+335. decide (v.) 決定
+Henry's brother needs to decide on a school soon.
+Henry 的弟弟需要儘快地決定一所學校。
+336. declare (v.) 宣稱
+Samuel is too shy to declare his love for Elaine.
+Samuel 太害羞了以致於不敢宣告他對 Elaine 的愛。
+337. decrease (n.) 日益減少
+Due to a large decrease in profits, Nina's company had to make many changes.
+由於利潤大幅下降,Nina的公司必須做出很多改變。
+338. deep (adj.) 深的
+Jill had to walk through the deep snow to get to her next class.
+Jill 必須穿越厚厚的積雪步行去她的下一堂課。
+339. defeat (v.) 打敗
+In order to defeat her opponent, Karen needs to come up with a better strategy.
+為了擊敗她的對手,Karen 需要想出一個更好的策略。
+340. defend (v.) 維護
+Roger called on me to defend him from the attack.
+Roger 要求我從攻擊中保護他。
+341. define (v.) 下定義
+Julia stressed the need to define the limits of the study.
+Julia 強調要限制研究的範圍的需要。
+342. degree (n.) 度
+Melissa said that this solution should give us a greater degree of accuracy.
+Melissa 說這個解決方案應該給我們一個更大的精確度。
+343. delay (v.) 延遲
+Isabella's supervisor plans to delay the project for a few months.
+Isabella 的上司計劃要將這企畫案延遲幾個月。
+344. delicate (adj.) 細緻的
+Elizabeth has delicate features, a slight build, and long dark hair.
+Elizabeth 擁有精緻的五官,一個瘦小的身體,和長長的黑髮。
+345. deliver (v.) 投遞
+Veronica asked me to deliver this package to you.
+Veronica 要我送這包裹給你。
+346. demand (v.) 要求
+Rita's new cell phone broke this afternoon, so she will go to the store tomorrow to demand a refund.
+Rita 的新手機在今天下午壞掉,所以她明天要到店裡要求退款。
+347. demonstrate (v.) 示威
+The students plan to demonstrate outside the library today in response to the raise in tuition rates.
+學生們計劃今天在圖書館外示威來回應提高學費這件事。
+348. denounce (v.) 譴責
+Sheila plans to publicly denounce her company's policies towards women and minorities.
+Sheila 計劃公開譴責她公司對婦女和少數民族的政策。
+349. deny (v.) 否定
+Few can deny that the new Corvette is one of the best cars on the market.
+很少有人能否認 new Corvette 是市場上最好的車型之一。
+350. departure (n.) 離開
+Carrie's departure was delayed because her mother came to see her at the last minute.
+Carrie 的離開被延遲了,因為她的母親突然地來看她。
+351. depend (v.) 依靠
+Too many young people depend on their parents when problems arise.
+當問題出現時,太多的年輕人依賴他門的父母。
+352. deploy (v.) 部署
+The admiral was ordered to deploy a carrier group to the crash site.
+海軍上將被下命要部署一支運載部隊到墜機現場。
+353. depression (n.) 沮喪
+Eric's father has been suffering from depression for the past several months.
+Eric 的爸爸過去幾個月受憂鬱症所苦。
+354. describe (v.) 描述
+Allan could not describe the joy he felt the first time he held his baby daughter.
+Allan 無法描述他第一次抱起他女兒時的喜悅。
+355. desert (n.) 沙漠
+Wanda is looking forward to her trip to the Arizona desert next month.
+Wanda 期待下個月到 Arizona 沙漠旅行。
+356. design (n.) 設計
+The board of directors approved the general design for the new factory.
+董事會批准在新工廠用一般的設計。
+357. desire (n.) 慾望
+Susan usually gives into her every desire, but it only causes her trouble.
+Susan 通常都會屈服於自己的每個慾望,但如此做只會給她自己帶來麻煩。
+358. destroy (v.) 毀壞
+I heard there are plans to destroy the old baseball stadium next month.
+我聽說下個月將有拆除舊棒球場的計畫。
+359. detail (n.) 細節
+Pam's boss never cares about the general ideas, but he is careful with every detail.
+Pam 的老闆沒有在乎一般想法,但他小心每一個細節。
+360. develop (v.) 發展
+Students need to develop better study skills in order to succeed.
+學生們為了要成功需要發展出更好的讀書技巧。
+361. device (n.) 設備
+Young people are always fascinated by the newest and latest electronic device.
+年輕人總是沉迷在最新的和剛上市電子設備。
+362. die (v.) 死
+Even though she was suffering from a terrible disease, she was not afraid to die.
+儘管她受重病所苦,但她並不害怕死亡。
+363. diet (n.) 節食
+It seems that more and more people have decided to go on a diet.
+看來似乎越來越多的人決定要節食。
+364. differ (v.) 與...不同
+Many people think that you are right, but I beg to differ.
+很多人覺得你是對的,但我不這麼認為。
+365. difficult (adj.) 難的
+Getting a baby to take her afternoon nap is often a difficult job.
+讓小寶寶睡午覺常是一件很困難的工作。
+366. dig (v.) 挖掘
+They quickly worked to dig the miners out of the mine.
+他們迅速地將礦工們從礦坑挖出來。
+367. dinner (n.) 晚餐
+Theresa cooked a delicious spaghetti dinner yesterday.
+Theresa 昨晚煮了一頓美味的義大利麵晚餐。
+368. diplomat (n.) 外交官
+Maura married a diplomat, and she now lives in Sweden.
+Maura 嫁給了一個外交官,現在住在瑞典。
+369. direct (v.) 指揮
+The teacher directed us to finish the project by Friday afternoon.
+那位老師指示我們在週五下午之前完成專題。
+370. dirt (n.) 塵土
+Lucia loves to go to the park and play in the dirt.
+Lucia 喜愛去公園玩泥土。
+371. disappear (v.) 消失
+After this test I plan to disappear and spend the summer in southern France.
+考完試後我會消失並到法國南部過暑假。
+372. discover (v.) 發現
+Kate needs to discover a way to fix the problem quickly.
+Kate 必須想出個方法來快速解決這問題。
+373. discuss (v.) 討論
+Molly wants to discuss her plans with her parents tomorrow night.
+Molly 想在明晚和他的雙親討論她的計畫。
+374. disease (n.) 疾病
+Smallpox and other diseases may now be treated with new drugs and medicine.
+天花病和其他的疾病現在也許可以用新藥物及醫學來治療。
+375. disk (n.) 圓盤
+At sunset, the sun appared to be a great big disk in the sky.
+日落時,太陽在天空中呈現成一個巨大的圓盤。
+376. dismiss (v.) 解散
+Gladys begged the teacher to dismiss the class early so that she could go to the Red Sox game.
+Gladys 請求老師提早結束課程以便她能去看紅襪隊的比賽。
+377. dispute (v.) 爭論
+Margaret wants to dispute her phone bill because she was charged for calls that she did not make.
+Margaret 想去爭論她的通話帳單,因為她被收取未曾撥過的通話費。
+378. distance (n.) 距離
+Olivia's house is only a short distance from here, so we don't need to drive.
+Olivia 的房子離這裡只有很短的距離,所以我們不需要開車。
+379. divide (v.) 分開
+After the argument, the teacher decided to divide the boys from the girls.
+在爭吵後,老師決定把男孩們與女孩們分開。
+380. do (v.) 做
+Daphne doesn't know what to do with all of these old clothes.
+Daphne 不知道該怎麼處理這些舊衣服。
+381. doctor (n.) 醫生
+His wife is a famous doctor, but she also does volunteer work at the church.
+他的妻子是一位著名的醫生,但她也在教堂做義工。
+382. document (n.) 文件
+Many valuable World War I documents were destroyed in the fire.
+許多有價值的第一世界大戰文件在火災中被燒毀。
+383. dog (n.) 狗
+Lucy would love to have a dog.
+Lucy 很想有一隻狗。
+384. door (n.) 門
+There is a little wooden door in the corner of the garden that leads to the church.
+花園角落有一個小木門可通往教堂。
+385. doubt (n.) 懷疑
+Many baseball fans have little doubt that the Yankees will finish in last place this year.
+很多棒球迷有點懷疑洋基隊今年會以最後一名結束。
+386. down (prep.) 向下
+Strawberry ice cream was dripping down Grace's chin as she waved good-bye.
+當她揮手告別時,草莓冰淇淋從Grace的下巴滴落下來。
+387. drain (n.) 排水管
+His wife dumped the rest of the soup down the drain.
+他的老婆將剩下的湯倒入排水管。
+388. draw (v.) 畫
+Grace likes to draw pictures of horses.
+Grace 喜歡畫馬的圖畫。
+389. dream (n.) 夢
+Fred's dream is to go to France and visit the Louvre.
+Fred 的夢想是去法國參觀羅浮宮。
+390. dress (n.) 洋裝
+She wants to wear a pink dress to Lucy's birthday party.
+她想穿粉紅色的洋裝去露西的生日派對。
+391. drink (v.) 喝
+My grandmother likes to drink a hot cup of green tea each morning.
+我的奶奶喜歡每天早上喝一杯熱綠茶。
+392. drive (v.) 駕駛
+We have to drive all night if we want to arrive in Boston before sunrise.
+如果想在日出前抵達波士頓,我們必須開一整晚的車。
+393. drop (n.) 小珠
+A tear drop ran down her cheek as she sadly walked away.
+當她傷心地走開時,一滴眼淚從她臉頰上滑落。
+394. drug (n.) 藥
+His sister refused to take any medicine or drugs for her cold.
+他的姐妹拒絕服用任何藥物來治療感冒。
+395. dry (adj.) 乾的
+The dry Arizona desert is a perfect place to visit during the winter break.
+在寒假期間,乾燥的亞利桑那州沙漠是個完美的旅遊地點。
+396. during (prep.) 在...期間
+We stayed home and read novels during the terrible snowstorm.
+在可怕的暴風雪來臨期間,我們呆在家裡看小說。
+397. dust (n.) 塵土
+Her comic book collection has been gathering dust in the basement for the past ten years.
+過去的十年來,他收藏的漫畫書已經在地下室積滿了灰塵。
+398. duty (n.) 任務
+Every young man must do his duty and serve in his country's armed forces.
+每一個年輕的男人都應該負起責任為國家的軍隊效力。
+399. each (n.) 每一
+Each sandwich is wrapped individually and packed in a cardboard box.
+每一個三明治都獨立包裝在一個紙盒裡。
+400. ear (n.) 耳朵
+She has small lovely ears and a wide beautiful smile.
+她有著小巧的可愛耳朵與大大的美麗笑容。
+401. early (adj.) 早的
+The student got up early to study for a big test.
+這個學生為了一個大考試而早起唸書。
+402. earn (v.) 贏取
+You need to earn her respect before she will allow you to join our team.
+在她同意你加入團隊之前,你必須先贏得她的尊重。
+403. earth (n.) 地球
+The Earth is our only home, so we should protect it.
+地球是我們唯一的家,所以我們應該保護它。
+404. east (n.) 東方
+The sun rises in the east.
+太陽從東邊升起。
+405. easy (adj.) 容易的
+Most students can understand easy English.
+大部分的學生都可以理解簡單的英文。
+406. eat (v.) 吃
+Everybody likes to eat delicious food.
+每個人都喜歡吃美味的食物。
+407. edge (n.) 邊緣
+The glass fell off the edge of the table and broke on the floor.
+玻璃掉落至桌緣,並碎裂一地。
+408. education (n.) 教育
+Students go to university in order to get a higher education.
+學生上大學是為了獲得高等教育。
+409. effect (n.) 效果
+The effect of the medicine was so good that he got better quickly.
+這個藥的藥效很好,使他恢復的很快。
+410. effort (n.) 努力
+To do well on exams, students need to make an effort to study hard.
+考試要考好,學生必須努力地用功學習。
+411. egg (n.) 蛋卵
+Chickens lay eggs.
+雞會下蛋。
+412. either (adj.) 二者任擇其一的
+You can have either coffee or tea.
+你可以喝咖啡或茶。
+413. elastic (adj.) 有彈性的
+My lunchbox was kept closed with an elastic band.
+我的午餐盒用橡皮筋密封著。
+414. electricity (n.) 電
+Electricity powers all the electronic appliances in our homes.
+電力提供給我們家裡所有電器用品。
+415. element (n.) 元素
+Water has two elements: hydrogen and oxygen.
+水擁有兩種元素:氫氣和氧氣。
+416. else (adv.) 另外
+Is there anything else you would like to ask me?
+還有什麼其它想問我的事嗎?
+417. embassy (n.) 大使館
+If a citizen of a foreign country needs help, they should go to their country's embassy.
+如果外國的公民需要幫助,他們應該要去他們國家的大使館。
+418. emergency (n.) 危機
+If there is an emergency, call 911.
+如有緊急事故,請撥打911。
+419. emotion (n.) 感情
+Love is a strong emotion.
+愛是一種強烈的情感。
+420. employ (v.) 雇用
+Microsoft employs many workers in its offices around the world.
+微軟在世界各地的辦公室僱用許多員工。
+421. empty (adj.) 空的
+There is an empty water bottle on the table.
+桌上有一個空水瓶。
+422. end (n.) 結局
+The end of the movie was very sad.
+這部電影的結局很令人傷心。
+423. enemy (n.) 敵人
+Mom always said that Tim is his own worst enemy.
+媽媽總是說提姆是他自己最大的敵人。
+424. enforce (v.) 使施行
+The police have to enforce the law in order to protect society.
+警方必須秉公執法以保護社會。
+425. engine (n.) 引擎
+The bigger the car's engine the faster it will drive.
+汽車的引擎越大,車子跑得越快。
+426. enjoy (v.) 享受
+I enjoy watching movies, and I really enjoy eating popcorn.
+我喜歡看電影,而且很喜歡吃爆米花。
+427. enough (adj.) 足夠的
+I have had enough food.
+我已經有足夠的食物了。
+428. enter (v.) 進入
+You can enter the building through the front door.
+你可以從前門進入大樓。
+429. entertain (v.) 娛樂
+Singers and actors entertain people.
+歌手和演員為人們提供娛樂。
+430. environment (n.) 環境
+The environment must be protected for our future generations.
+為了我們的後代子孫,環境務必要保護好。
+431. equal (adj.) 平等的
+Men and women don't always get equal pay, do they?
+男人和女人並不一定得到同工同酬,不是嗎?
+432. equate (v.) 使相等
+Many people equate success with money.
+很多人把成功與金錢畫上等號。
+433. equipment (n.) 設備
+To do experiments, the University needs special equipment.
+為了做實驗,這所大學需要特殊的設備。
+434. erase (v.) 清除
+It is possible to erase posts on Facebook by pressing delete.
+人們可以按DELETE鍵,刪除在Facebook上的貼文。
+435. escape (v.) 逃跑
+The prisoners escaped from jail, but were caught again by the police.
+這些囚犯從監獄逃脫,但再次被警察逮捕。
+436. especially (adv.) 特別是
+Americans especially like to eat pizza.
+美國人特別喜歡吃披薩。
+437. establish (v.) 建立
+The United Nations was established after World War II.
+聯合國是第二次世界大戰後建立的。
+438. estimate (n.) 估計
+We need a rough estimate of how many people are going to attend the conference.
+我們需要粗略的估計多少人會參加這個會議。
+439. ethnic (adj.) 種族的
+New York City is home to people from many diverse backgrounds and ethnic groups.
+對許多不同背景的人和族裔群體而言,紐約市是一個大家庭。
+440. evaporate (v.) 蒸發
+When water starts to boil, it will evaporate and become gas.
+當水開始沸騰,就會蒸發變成氣體。
+441. even (adj.) 一致的
+Both students got the same score, so they had an even ranking in the class.
+兩個學生得到了相同的分數,所以他們在班上的排名相同。
+442. event (n.) 事件
+Marriage is an important event in most people's lives.
+婚姻是大多數人的生活中的重要事件。
+443. ever (adv.) 曾經
+Have you ever been to Europe?
+你有去過歐洲嗎?
+444. every (adj.) 每一
+I like every kind of chocolate.
+我喜歡每一種巧克力。
+445. evidence (n.) 證據
+The police used the evidence to show that the man was guilty.
+警察運用證據顯示該名男子是有罪的。
+446. evil (adj.) 邪惡的
+Her evil plan to prevent her sister's wedding failed.
+她想要阻止她妹妹婚禮的邪惡計畫失敗了。
+447. exact (adj.) 確切的
+Do you know the exact number of people in Taiwan?
+你知道精確的台灣人口數嗎?
+448. example (n.) 例子
+The teacher gave an example to help the students understand.
+老師舉了一個例子幫助學生理解。
+449. except (prep.) 除...以外
+I remember the birthdays of all my good friends except Judy's.
+除了Judy 以外,所有好朋友的生日我都記得。
+450. exchange (v.) 交換
+I need to exchange these shoes for another pair in a smaller size.
+我要換一雙尺寸更小的鞋子。
+451. excuse (v.) 原諒
+Please excuse me for being late this morning.
+請原諒我今天上午遲到。
+452. execute (v.) 執行
+The company executed its new plan to sell technology to China.
+該公司執行了新的計畫且打算將技術賣給中國。
+453. exercise (n.) 運動
+To keep healthy, people need to do exercise.
+人們需要運動以維持健康。
+454. exist (v.) 存在
+Do you believe that aliens exist?
+你相信有外星人的存在嗎?
+455. exit (n.) 出口
+We should park near the exit, so we can get out quickly when we leave.
+我們應該停在出口附近,當我們要離開時才可以快速的出去。
+456. expand (v.) 擴張
+The city government plans to expand the main train station and add a new shopping area.
+市政府計畫擴大火車站,並添加一個新的購物區。
+457. expect (v.) 期待
+The teacher expects her students to do their homework on time.
+老師期待他的學生能準時做完功課。
+458. expense (n.) 費用
+When one goes travelling, there are many expenses such as hotel and food costs.
+出去旅行時,會有許多開支,例如飯店和食物的費用。
+459. experience (n.) 經驗
+Travelling can be a good experience; there are many things to be seen and learned.
+旅行是一個很好的經驗,不僅可以看到很多東西,也能學到很多事。
+460. experiment (n.) 實驗
+The scientist did an experiment on a white mouse.
+科學家在一隻白老鼠身上做實驗。
+461. expert (n.) 專家
+The professor is an expert in computer design.
+這位教授是電腦設計的專家。
+462. explain (v.) 解釋
+The teacher explained the problem to the students.
+老師向這些學生解釋這個問題。
+463. explode (v.) 爆炸
+When a nuclear bomb explodes, it causes much damage.
+當核彈爆炸時會造成很大的傷害。
+464. explore (v.) 探索
+Discovery Channel tells us to explore our world.
+Discovery 頻道告訴我們要去探索我們的世界。
+465. export (v.) 出口
+iPhones are exported to countries all over the world.
+iPhone 出口到全世界各地的國家。
+466. express (v.) 表達
+If one is shy, it is difficult to express feelings clearly.
+如果一個人害羞內向,會很難表達清楚自己的感受。
+467. extend (v.) 延長
+I would like to extend my visa for another 60 days, so that I can stay longer in this country.
+我想把我的簽證延長60天,以便我能在這個國家待久一點。
+468. extra (adj.) 額外的
+Please give me extra cream in my coffee.
+請給我的咖啡多加點奶精。
+469. extreme (adj.) 極端的
+Some brave people enjoy extreme sports such as mountain biking, free running, and jumping out of aeroplanes.
+一些勇敢的人們享受極限運動,像是騎越野車、花式奔跑、跳傘等。
+470. eye (n.) 眼睛
+We use our eyes to see.
+我們用眼睛去看。
+471. face (n.) 臉
+As we get older, our face will age.
+當我們年長了,臉也跟著老化。
+472. fact (n.) 事實
+It is a fact that the earth is round.
+地球是圓的,這是一個事實。
+473. factory (n.) 工廠
+Taiwan has many factories producing electronics.
+台灣有很多電子產品工廠。
+474. fail (v.) 失敗
+I didn't study hard, and I failed my test.
+我沒有認真讀書,因此考試考不好。
+475. fair (adj.) 公平的
+In order to receive a fair trial, his case will be heard in Philadelphia.
+為了得到公平的審判,他的案件將在費城審理。
+476. fall (v.) 落下
+When walking down a mountain, it is easy to fall if one is not careful.
+步行下山時,一個不小心很容易跌倒。
+477. false (adj.) 假的
+Dentists can give people false teeth.
+牙醫可以幫你做假牙。
+478. family (n.) 家庭
+We depend on our family for support.
+我們仰賴家人的支持。
+479. famous (adj.) 有名的
+Michael Jackson was a famous singer.
+Michael Jackson 是有名的歌手。
+480. far (adj.) 遠的
+Peggy had to travel to the far reaches of the store to find these shoes.
+Peggy 必須走到商店的遠端,才找到這些鞋子。
+481. fast (adj.) 快的
+Keith has always been a fast runner.
+Keith一向是一個腳程很快的人。
+482. fat (adj.) 肥胖的
+We saw an old fat man sitting on the beach with his dog.
+我們看到一個胖胖的老人和他的狗坐在沙灘上。
+483. father (n.) 父親
+My father taught me many important lessons.
+我爸爸教我很多重要的課題。
+484. fear (n.) 害怕
+Billy has a morbid fear of spiders.
+比利對蜘蛛有病態的恐懼。
+485. feather (n.) 羽毛
+Birds have feathers to help them fly.
+鳥類的羽毛能幫助牠們飛翔。
+486. feature (n.) 特色
+The best feature of the iPhone is its simple design.
+iPhone 最棒的特色是它簡單的設計。
+487. feed (v.) 餵
+When my cat is hungry, I feed it food.
+當我的貓餓了,我就會餵牠食物。
+488. feel (v.) 感覺
+I feel very tired because I stayed up late.
+因為我熬夜,所以我感覺很累。
+489. female (n.) 女性
+The female of the species is able to give birth.
+女性生物具有生育能力。
+490. fertile (adj.) (土地)肥沃的
+Taiwan is a fertile country; it is easy to grow food on the land.
+台灣是一個土地肥沃的國家:種植糧食非常容易。
+491. few (n.) 少量
+Of my friends few live in England.
+我的朋友中,很少人住在英國。
+492. field (n.) 田地
+The field was full of children playing in the grass.
+許多小朋友喜歡在草地上玩耍。
+493. fierce (adj.) 兇猛的
+A tiger is a fierce and a powerful animal.
+老虎是兇猛且力量強大的動物。
+494. fight (n.) 格鬥
+We saw a couple having a big fight at the restaurant.
+我們看到一對夫妻在餐廳打架。
+495. figure (n.) 數字
+I'm not good at maths and I don't like figures.
+我數學不好,我也不喜歡數字。
+496. file (n.) 檔案夾
+Save the file on your desktop.
+儲存檔案在桌面。
+497. fill (v.) 裝滿
+I need to fill my canteen before we go on our hike.
+在我們去遠足前,我需要先裝滿我的水壺。
+498. film (n.) 影片
+The film was very popular and made a lot of money at the box office.
+這部電影很歡迎而且票房賺進了很多錢。
+499. final (adj.) 最終的
+This is our final test.
+這是我們的期末考。
+500. finance (n.) 財務情況
+The city's finances are bad.
+本市的財務狀況不佳。
+501. find (v.) 找到;發現
+We need to find your keys quickly.
+我們需要快速的找到你的鑰匙。
+502. fine (adj.) 美好的
+Today is a fine day for outdoor activities.
+今天是戶外活動最棒的時間。
+503. finger (n.) 手指
+She has a ring on her finger.
+她的手指上有結婚戒指。
+504. finish (v.) 完成
+I need to finish my homework before tomorrow.
+我需要在明天之前完成我的功課。
+505. fire (v.) 開火
+They fired at the enemy.
+他們向敵人開火。
+506. firm (adj.) 堅定的
+Make sure you have a firm grip on the ball.
+請確保您有對球牢牢掌握。
+507. first (adv.) 第一
+He was first and got the gold medal.
+他得第一並獲得了金牌。
+508. fish (n.) 魚
+Fish swim in the sea.
+魚在海裡游泳。
+509. fist (n.) 拳頭
+The boxer hit the bag with his fist.
+拳擊手用拳頭擊沙包。
+510. fit (v.) 適用於
+This suit does not seem to fit that well.
+這套衣服似乎沒有很合身。
+511. fix (v.) 修理
+My motorcycle is broken and needs to be fixed.
+我的摩托車壞了需要去修理。
+512. flag (n.) 旗幟
+France's flag is red, white and blue.
+法國的國旗是紅色,白色和藍色的。
+513. flat (n.) 公寓
+I live in a small flat.
+我住在一個小公寓。
+514. float (v.) 漂浮
+Clouds floated overhead.
+雲在空中飄浮。
+515. floor (n.) 地板
+The floor is dirty and needs to be cleaned.
+地板髒了須要去清洗。
+516. flow (v.) 流動
+It is difficult to get liquids to flow in cold weather.
+在寒冷的天氣裡這液體很難流動。
+517. flower (n.) 花
+A rose is a red flower.
+玫瑰是紅色的花朵。
+518. fluid (n.) 流體
+The brake fluid had leaked all over the floor.
+煞車油漏的滿地都是。
+519. fly (v.) 飛
+Birds fly in the sky.
+鳥在天上飛。
+520. fog (n.) 霧
+As the fog lifted we knew it was going to be a great day.
+霧散了,我們知道這是美好的一天。
+521. fold (v.) 折疊
+Our teacher asked us to fold a piece of paper in half.
+我們老師要求我們要把一張紙對折。
+522. follow (v.) 跟隨
+Getting people to follow you is actually more difficult than leading them.
+讓人們跟隨你是比你領導他們更難的。
+523. food (n.) 食物
+The food was already gone when we arrived.
+當我們到達的時候,已經都沒有食物了。
+524. fool (n.) 傻瓜
+A fool is somebody who doesn't think carefully.
+傻瓜通常是思維不縝密的人。
+525. foot (n.) 腳
+My foot is hurt and I cannot walk properly.
+我的腳受傷了,我無法正常行走。
+526. for (prep.) 給;為了
+This ice cream is for you.
+這冰淇淋是給你的。
+527. forbid (v.) 禁止
+The law forbids us to kill others.
+法律禁止我們殺人。
+528. force (v.) 迫使
+Frank had to force the door open.
+法蘭克不得不強行把門打開。
+529. foreign (adj.) 國外的
+Many people enjoy visiting foreign countries.
+很多人享受出國遊覽。
+530. forest (n.) 森林
+The forest is full of trees.
+森林裡充滿了樹木。
+531. forget (v.) 忘記
+Don't forget to take your keys before you leave the house.
+離開家前別忘了你的鑰匙。
+532. forgive (v.) 原諒
+Please forgive me.
+請原諒我。
+533. form (n.) 形式
+Business letters usually have a specific form.
+商業信函通常有一種特定形式。
+534. former (adj.) 前任的
+My former boss was a professor of law.
+我的前任老闆是法學教授。
+535. forward (adv.) 向前
+We need to walk forward towards our goals.
+我們需要邁步前進我們的目標。
+536. frame (n.) 框架
+This picture has a beautiful wooden frame.
+這幅畫有一個美麗的木製框架。
+537. free (adj.) 免費的
+Ruth won a free subscription to the New York Times.
+Ruth 贏得了紐約時報的免費訂閱。
+538. freeze (v.) 冷凍
+Fiona decided to freeze the leftover meat.
+Fiona 決定把剩菜冰起來
+539. fresh (adj.) 新鮮的
+I like fresh fruit and vegetables, but I don't like canned products.
+我喜歡新鮮的水果和蔬菜,但我不喜歡罐頭產品。
+540. friend (n.) 朋友
+He is my best friend.
+他是我最好的朋友。
+541. frighten (v.) 使害怕
+Thunder frightened the baby.
+商業信函通常有一種特定形式。
+542. from (prep.) 從
+Where do you come from?
+你從哪裡來的。
+543. front (n.) 前面
+The front of his shirt was dirty.
+我們需要邁步前進我們的目標。
+544. fruit (n.) 水果
+An apple is a fruit most people like to eat.
+蘋果是一種大多數人都喜歡吃的水果。
+545. fuel (n.) 燃料
+You need to fill your car with fuel before you go on a long journey.
+你需要在漫長的旅程之前先把車加滿油。
+546. full (adj.) 滿的
+Mandy has a full schedule next week.
+Mandy 下週時間表很滿。
+547. fun (adj.) 有趣的
+Playing computer games is fun.
+玩電腦遊戲是有趣的。
+548. future (n.) 未來
+Nobody knows what the future holds.
+沒有人知道未來會如何。
+549. gain (v.) 贏取
+I gained a lot of experience while working in the company.
+當我在公司工作的時候獲得大量經驗。
+550. gallon (n.) 加侖
+The Americans use gallons instead of litres when talking about fuel.
+在美國談論到石油是用加崙而非公升。
+551. game (n.) 比賽
+The basketball game was very exciting.
+這個籃球比賽非常刺激。
+552. gang (n.) (歹徒)一夥
+My cousin joined a gang and has recently caused a lot of problems in his hometown.
+我的表弟加入了幫派而且最近在他的家鄉惹了許多麻煩。
+553. garden (n.) 花園
+This garden has beautiful flowers and grass.
+這個花園有很多漂亮的花和草。
+554. gas (n.) 氣體
+This old truck only runs on expensive premium gas.
+這個老卡車只能用昂貴的高價汽油才能跑。
+555. gather (v.) 聚集
+She gathered her clothes and put them in her cupboard.
+她把衣服收好放在她的櫥櫃裡。
+556. general (adj.) 一般的;普遍的
+This article will give you a general idea about my view on this subject.
+這文章能讓你大概了解我對於這個主題的看法。
+557. gentle (adj.) 溫和的
+Rabbits are gentle animals.
+兔子是很溫和的動物。
+558. get (v.) 使得到
+I will get the milk for you
+我會給你一些牛奶。
+559. gift (n.) 禮物
+Gifts are usually given to people on their birthdays.
+禮物通常是有人生日時拿來送人的。
+560. girl (n.) 女孩
+The girl had beautiful long hair.
+這個女孩有美麗的長頭髮。
+561. give (v.) 給予
+Please give the ticket to the student who paid for it.
+請把票給那位付了錢的學生。
+562. glass (n.) 玻璃
+Windows are made of glass.
+窗戶是用玻璃作成的。
+563. global (adj.) 全球的
+Global warming is a serious problem.
+全球暖化是個嚴肅的問題。
+564. go (v.) 去
+Where do you want to go?
+你想要去哪裡?
+565. goal (n.) 目標
+Every student's goal is to learn something at school
+每個學生的目標是在學校裡學點東西。
+566. god (n.) 上帝
+Do you believe in God?
+你相信有上帝嗎?
+567. gold (n.) 黃金
+Gold is a valuable commodity and is often bought as gifts for people getting married in Taiwan.
+黃金是個有價值的商品,在台灣婚嫁都會買來當禮品贈送。
+568. good (adj.) 好的
+This cafe sells good food at a reasonable price.
+這間咖啡店賣的食物價格合理又好吃。
+569. govern (v.) 統治
+The government helps govern the country so that the society remains stable.
+政府幫忙統理這個國家使社會能維持安定。
+570. grass (n.) 青草
+My sister likes to lie on the grass on sunny afternoons.
+我姐姐喜歡在陽光明媚的下午躺在草地上。
+571. gray(grey) (n.) 灰色
+Michael painted this wall grey.
+Michael 把牆漆成灰色的。
+572. great (adj.) 大量的
+China has a great amount of people.
+中國有非常多的人民。
+573. green (n.) 草坪;綠色
+Her second shot landed on the green just a few feet from the 18th hole.
+她的第二竿落在離18洞幾英呎的果嶺上。
+574. ground (n.) 地面
+The ground is hard and uncomfortable to lie on.
+這地板又硬又難躺。
+575. group (n.) 一群
+I belong to a group of people that enjoy doing tai-chi.
+我屬於一群喜歡做太極的人。
+576. grow (v.) 成長
+Business is growing every year.
+業務每年都在成長。
+577. guarantee (v.) 保證
+I guarantee that we will find the right gift for your sister.
+我保證我們會找到合適的禮物送給你的妹妹。
+578. guard (n.) 守衛
+The guard protects cars from being stolen.
+警衛保護車子防止它們被偷。
+579. guess (v.) 猜
+Can you guess how old I am?
+你能猜出我多大了?
+580. guide (n.) 嚮導
+The tour guide took us to see the Eiffel Tower and the Louvre.
+導遊帶我們去看艾菲爾鐵塔和羅浮宮。
+581. guilty (adj.) 愧疚的
+Joy and Annie exchanged guilty looks as their teacher spoke to them.
+Joy 和 Annie 被老師叫去談話時互相交換著愧疚的神情。
+582. gun (n.) 槍
+Guns are dangerous weapons and should not be shot carelessly.
+槍是危險的武器,不應亂開槍。
+583. guy (n.) 傢伙
+I don't know that guy.
+我不認識這傢伙。
+584. hair (n.) 毛髮
+Hair grows on one's head.
+頭髮長在頭上。
+585. half (n.) 一半
+Please cut the apple in half.
+請把蘋果切成兩半。
+586. halt (n.) 停止
+The truck skidded to a halt on the icy road.
+卡車打滑並在結冰的路上停了下來。
+587. hand (n.) 手
+A hand has five fingers.
+手有五根手指。
+588. hang (v.) 懸掛
+The picture hangs on the wall.
+照片懸掛在牆上。
+589. happen (v.) 發生
+When did it happen?
+什麼時候發生的?
+590. happy (adj.) 快樂的
+The happy fans left the ballpark after the exciting game.
+精采的比賽後,快樂的球迷離開球場。
+591. hard (adj.) 辛苦的
+After a hard day at work, Mom still has to cook dinner and do the dishes.
+在辛苦工作一天後,媽媽還是要煮晚餐和洗碗。
+592. harm (n.) 損害
+Marty was threatened with bodily harm, but he still told the police his story.
+即使 Marty 被威脅傷害,但仍然告訴警察他的故事。
+593. hat (n.) 帽子
+When going out into the sun, it's a good idea to wear a hat.
+出門時太陽若很大,戴帽子是個好主意。
+594. hate (v.) 討厭;憎惡
+I hate to wake up early on weekends.
+我討厭在週末早起。
+595. have (v.) 有
+Do you have five dollars?
+你有五塊錢嗎?
+596. he (pron.) 他
+He is a teacher.
+他是一名教師。
+597. head (n.) 頭
+My head hurts from studying too much.
+讀太多書讓我頭痛得很。
+598. heal (v.) 醫治
+The doctor healed his patient.
+醫生治好了他的病人。
+599. health (n.) 健康
+Good health is important to everyone.
+良好的健康對所有人來說都很重要。
+600. hear (v.) 聽到
+Sorry! Could you say that again? I didn't hear it clearly.
+對不起你能再說一遍嗎?我聽不到你說什麼。
+`,
+
+        list2: `
+751. list (n.) 列表
+Today’s newspaper had a list of the world’s richest people.
+今天的報紙上有全世界最富有的人的名單。
+752. listen (v.) 聽
+Everyday when he gets up he likes to listen to music.
+他喜歡在每天起床的時候聽音樂。
+753. little (adj.) 小的
+Please use the little key to open the door.
+請用小鑰匙打開門。
+754. live (v.) 生活
+He had to live on NT$100 a day when he was a student.
+當他還是學生的時候，每天只有 100 元過日子。
+755. load (v.) 負載
+Can you help me load this truck with pineapples?
+你能不能幫我把這些鳳梨裝上卡車。
+756. loan (n.) 貸款
+I am still paying my student loan after I have had a job for five years.
+我工作五年了還在付助學貸款。
+757. local (adj.) 當地的
+Tainan has many delicious local snacks.
+台南有很多在地美食。
+758. locate (v.) 尋找
+They have spent days trying to locate the airplane.
+他們花了好幾天試圖尋找那架飛機。
+759. lock (v.) 鎖
+Before you leave please lock the door.
+離開前請鎖門。
+760. log (n.) 原木
+The heavy log burned for hours.
+那塊沉重的原木燒了好幾個小時。
+761. lonely (adj.) 孤獨的
+The lonely man lived in the forest.
+那個孤獨的人住在森林裡。
+762. long (adj.) 長的
+It is a long way from here to the station.
+從這裡到車站很遠。
+763. look (v.) 看
+Look at the sky.
+看看天空。
+764. loose (adj.) 鬆的
+The screw is loose.
+螺絲鬆了。
+765. lose (v.) 失去
+Be careful not to lose your wallet.
+小心不要弄丟錢包。
+766. lot (n.) 許多
+A lot of people like coffee.
+很多人喜歡咖啡。
+767. loud (adj.) 大聲的
+The music is too loud.
+音樂太大聲了。
+768. love (v.) 愛
+I love my family.
+我愛我的家人。
+769. low (adj.) 低的
+The ceiling is very low.
+天花板很低。
+770. luck (n.) 運氣
+Good luck on your exam.
+祝你考試好運。
+771. mail (n.) 郵件
+The mail arrived late today.
+今天郵件來得很晚。
+772. main (adj.) 主要的
+This is the main problem.
+這是主要問題。
+773. major (adj.) 重要的
+This is a major decision.
+這是一個重大的決定。
+774. make (v.) 做
+Please make a choice.
+請做出選擇。
+775. male (n.) 男性
+The doctor asked if the baby was male.
+醫生問寶寶是不是男的。
+776. man (n.) 男人
+That man is my teacher.
+那個男人是我的老師。
+777. manufacture (v.) 製造
+They manufacture shoes.
+他們製造鞋子。
+778. many (adj.) 許多
+Many students are here.
+很多學生在這裡。
+779. map (n.) 地圖
+Look at the map.
+看看地圖。
+780. march (v.) 行軍
+The soldiers marched all day.
+士兵行軍了一整天。
+781. mark (n.) 記號
+Put a mark here.
+在這裡做個記號。
+782. market (n.) 市場
+The market is crowded.
+市場很擁擠。
+783. marry (v.) 結婚
+They plan to marry next year.
+他們計畫明年結婚。
+784. master (n.) 大師
+He is a master of music.
+他是音樂大師。
+785. match (n.) 比賽
+We watched a football match.
+我們看了一場足球賽。
+786. material (n.) 材料
+This bag is made of strong material.
+這個包包是用堅固的材料做的。
+787. matter (n.) 事情
+This is a serious matter.
+這是一件嚴重的事情。
+788. may (aux.) 可能
+It may rain today.
+今天可能會下雨。
+789. mayor (n.) 市長
+The mayor spoke to the people.
+市長向市民演講。
+790. me (pron.) 我
+Please help me.
+請幫助我。
+791. meal (n.) 餐
+We had a great meal.
+我們吃了一頓美味的餐。
+792. mean (v.) 意思是
+What does this word mean?
+這個字是什麼意思？
+793. measure (v.) 測量
+Please measure the table.
+請測量桌子。
+794. meat (n.) 肉
+I don’t eat meat.
+我不吃肉。
+795. media (n.) 媒體
+The media reported the news.
+媒體報導了這則新聞。
+796. meet (v.) 遇見
+Nice to meet you.
+很高興見到你。
+797. member (n.) 成員
+He is a member of the club.
+他是這個俱樂部的成員。
+798. memory (n.) 記憶
+This place brings back memories.
+這地方喚起回憶。
+799. mental (adj.) 心理的
+Mental health is important.
+心理健康很重要。
+800. mercy (n.) 仁慈
+Please show mercy.
+請展現仁慈。
+801. message (n.) 訊息
+I got your message.
+我收到你的訊息了。
+802. metal (n.) 金屬
+This chair is made of metal.
+這張椅子是金屬做的。
+803. method (n.) 方法
+This is a good method.
+這是一個好方法。
+804. middle (adj.) 中間的
+Sit in the middle.
+坐在中間。
+805. might (aux.) 可能
+It might be true.
+這可能是真的。
+806. mile (n.) 英里
+It is one mile away.
+距離一英里。
+807. military (adj.) 軍事的
+The military base is nearby.
+軍事基地就在附近。
+808. milk (n.) 牛奶
+I drink milk every day.
+我每天喝牛奶。
+809. mind (n.) 心智
+Keep this in mind.
+記住這件事。
+810. mine (pron.) 我的
+This book is mine.
+這本書是我的。
+811. minister (n.) 部長
+The minister gave a speech.
+部長發表了演說。
+812. minor (adj.) 較小的
+It is a minor problem.
+這是個小問題。
+813. miscellaneous (adj.) 各式各樣的
+She paid miscellaneous expenses.
+她支付了各種雜費。
+814. miss (v.) 想念
+I miss my family.
+我想念我的家人。
+815. mistake (n.) 錯誤
+Everyone makes mistakes.
+每個人都會犯錯。
+816. mix (v.) 混合
+Mix water and sugar.
+把水和糖混合。
+817. mob (n.) 群眾
+An angry mob gathered.
+憤怒的群眾聚集了。
+818. model (n.) 模型
+They showed us a model.
+他們展示了一個模型。
+819. moderate (adj.) 適度的
+Moderate exercise is good.
+適度的運動很好。
+820. modern (adj.) 現代的
+We live in a modern city.
+我們住在現代化城市。
+821. money (n.) 金錢
+At last the business is starting to make money.
+終於這家公司開始賺錢了。
+822. month (n.) 月份
+December is the last month of the year.
+十二月是一年的最後一個月。
+823. moon (n.) 月亮
+The Americans landed on the moon in 1969.
+美國人在 1969 年登陸月球。
+824. moral (adj.) 道德的
+The project has a moral problem.
+這個企劃有道德上的問題。
+825. more (adj.) 更多的
+I need more time to finish the task.
+我需要更多時間來完成工作。
+826. morning (n.) 早上
+Most people eat breakfast in the morning.
+大多數人早上吃早餐。
+827. most (adj.) 最多的
+The team with the most points wins.
+得分最多的隊伍獲勝。
+828. mother (n.) 母親
+He bought flowers for his mother.
+他買花給他的母親。
+829. motion (n.) 移動
+The train is in motion.
+火車正在行進中。
+830. mountain (n.) 山
+They climbed the mountain.
+他們爬上那座山。
+831. mouth (n.) 嘴
+Open your mouth.
+張開你的嘴。
+832. move (v.) 移動
+Please move the chair.
+請移動椅子。
+833. much (adj.) 許多的
+There isn’t much time.
+沒有太多時間。
+834. murder (n.) 謀殺
+The murder shocked the town.
+這起謀殺案震驚了小鎮。
+835. muscle (n.) 肌肉
+Exercise builds muscle.
+運動能鍛鍊肌肉。
+836. music (n.) 音樂
+She loves music.
+她喜愛音樂。
+837. must (aux.) 必須
+You must wear a helmet.
+你必須戴安全帽。
+838. my (pron.) 我的
+This is my bag.
+這是我的包包。
+839. mystery (n.) 謎
+The case remains a mystery.
+這案件仍是個謎。
+840. nail (n.) 釘子
+Hammer the nail into the wall.
+把釘子釘進牆裡。
+841. name (n.) 名字
+What is your name?
+你叫什麼名字？
+842. narrow (adj.) 狹窄的
+The road is narrow.
+這條路很窄。
+843. nation (n.) 國家
+That nation is powerful.
+那個國家很強大。
+844. native (adj.) 本地的
+He is a native speaker.
+他是母語使用者。
+845. navy (n.) 海軍
+He joined the navy.
+他加入了海軍。
+846. near (adj.) 近的
+The station is near.
+車站就在附近。
+847. necessary (adj.) 必要的
+This is necessary.
+這是必要的。
+848. neck (n.) 脖子
+My neck hurts.
+我的脖子痛。
+849. need (v.) 需要
+I need help.
+我需要幫助。
+850. neighbor (n.) 鄰居
+My neighbor is friendly.
+我的鄰居很友善。
+851. neither (adv.) 也不
+Neither of them came.
+他們兩個都沒來。
+852. nerve (n.) 神經
+He has strong nerves.
+他神經很強韌。
+853. neutral (adj.) 中立的
+The country stayed neutral.
+那個國家保持中立。
+854. never (adv.) 從不
+I never lie.
+我從不說謊。
+855. new (adj.) 新的
+I bought a new phone.
+我買了一支新手機。
+856. news (n.) 新聞
+Did you hear the news?
+你聽到新聞了嗎？
+857. next (adj.) 下一個
+See you next week.
+下週見。
+858. nice (adj.) 好的
+She is a nice person.
+她是個好人。
+859. night (n.) 夜晚
+Good night.
+晚安。
+860. no (adv.) 不
+No, I don’t agree.
+不，我不同意。
+861. noise (n.) 噪音
+The noise is loud.
+噪音很大。
+862. noon (n.) 中午
+We eat at noon.
+我們中午吃飯。
+863. normal (adj.) 正常的
+This is normal.
+這是正常的。
+864. north (n.) 北方
+Taipei is in the north.
+台北在北部。
+865. nose (n.) 鼻子
+My nose is cold.
+我的鼻子很冷。
+866. not (adv.) 不
+I am not ready.
+我還沒準備好。
+867. note (n.) 筆記
+Take notes in class.
+上課要做筆記。
+868. nothing (n.) 沒有東西
+There is nothing inside.
+裡面什麼都沒有。
+869. notice (v.) 注意
+Did you notice that?
+你有注意到嗎？
+870. now (adv.) 現在
+Do it now.
+現在就做。
+871. nowhere (adv.) 無處
+He has nowhere to go.
+他無處可去。
+872. number (n.) 數字
+Write your number.
+寫下你的號碼。
+873. obey (v.) 服從
+Children must obey rules.
+孩子必須服從規則。
+874. object (n.) 物體
+This object is heavy.
+這個物體很重。
+875. observe (v.) 觀察
+Observe the stars.
+觀察星星。
+876. occupy (v.) 佔據
+The room is occupied.
+房間被佔用了。
+877. occur (v.) 發生
+Accidents occur often.
+意外經常發生。
+878. of (prep.) 的
+A cup of tea.
+一杯茶。
+879. off (adv.) 關掉
+Turn off the light.
+把燈關掉。
+880. offer (v.) 提供
+They offer help.
+他們提供幫助。
+881. office (n.) 辦公室
+She works in an office.
+她在辦公室工作。
+882. officer (n.) 官員
+The officer arrived.
+官員到了。
+883. often (adv.) 常常
+I often read books.
+我常常讀書。
+884. oil (n.) 油
+Add some oil.
+加一點油。
+885. old (adj.) 老的
+This house is old.
+這棟房子很老。
+886. on (prep.) 在上面
+The book is on the table.
+書在桌上。
+887. once (adv.) 一次
+I went there once.
+我去過一次。
+888. only (adj.) 唯一的
+She is the only child.
+她是獨生女。
+889. open (v.) 打開
+Open the window.
+打開窗戶。
+890. operate (v.) 操作
+He operates the machine.
+他操作那台機器。
+900. ounce (n.) 盎司
+Drink eight ounces of water.
+喝八盎司的水。
+901. our (pron.) 我們的
+This is our house.
+這是我們的房子。
+902. out (adv.) 外面
+Go out and play.
+出去玩吧。
+903. outside (adv.) 外面
+Wait outside.
+在外面等。
+904. over (prep.) 在…之上
+The lamp is over the table.
+燈在桌子上方。
+905. owe (v.) 欠
+I owe you money.
+我欠你錢。
+906. own (v.) 擁有
+He owns a car.
+他擁有一輛車。
+907. pain (n.) 疼痛
+I feel pain in my leg.
+我的腿感到疼痛。
+908. paint (v.) 塗漆
+They paint the wall white.
+他們把牆漆成白色。
+909. pair (n.) 一對
+I bought a pair of shoes.
+我買了一雙鞋。
+910. panic (n.) 恐慌
+The crowd was in panic.
+人群陷入恐慌。
+911. paper (n.) 紙
+Write it on paper.
+把它寫在紙上。
+912. parent (n.) 父母
+Her parent is a teacher.
+她的父母是老師。
+913. park (n.) 公園
+Let’s go to the park.
+我們去公園吧。
+914. part (n.) 部分
+This is part of the plan.
+這是計畫的一部分。
+915. party (n.) 派對
+They had a party.
+他們辦了一場派對。
+916. pass (v.) 通過
+Please pass the salt.
+請把鹽遞過來。
+917. past (n.) 過去
+Forget the past.
+忘記過去。
+918. path (n.) 小路
+Follow the path.
+沿著小路走。
+919. pay (v.) 付錢
+You must pay first.
+你必須先付錢。
+920. peace (n.) 和平
+The world needs peace.
+世界需要和平。
+921. people (n.) 人們
+Many people came.
+很多人來了。
+922. perfect (adj.) 完美的
+Everything is perfect.
+一切都很完美。
+923. perform (v.) 表演
+She will perform tonight.
+她今晚要表演。
+924. perhaps (adv.) 也許
+Perhaps he is right.
+也許他是對的。
+925. period (n.) 時期
+This is a difficult period.
+這是一段困難時期。
+926. person (n.) 人
+He is a kind person.
+他是個善良的人。
+927. personal (adj.) 個人的
+This is personal information.
+這是個人資訊。
+928. phone (n.) 電話
+My phone is ringing.
+我的電話在響。
+929. photo (n.) 照片
+Take a photo.
+拍一張照片。
+930. physical (adj.) 身體的
+Physical health matters.
+身體健康很重要。
+931. pick (v.) 挑選
+Pick one.
+選一個。
+932. picture (n.) 圖片
+This picture is nice.
+這張圖片很好看。
+933. piece (n.) 一片
+Give me a piece of cake.
+給我一塊蛋糕。
+934. place (n.) 地方
+This is a nice place.
+這是個好地方。
+935. plan (n.) 計畫
+We have a plan.
+我們有個計畫。
+936. plant (n.) 植物
+Water the plant.
+澆植物。
+937. play (v.) 玩
+Children play outside.
+孩子們在外面玩。
+938. please (adv.) 請
+Please sit down.
+請坐下。
+939. pleasure (n.) 樂趣
+Reading is a pleasure.
+閱讀是一種樂趣。
+940. plenty (n.) 大量
+We have plenty of time.
+我們有很多時間。
+941. point (n.) 重點
+That’s the point.
+那就是重點。
+942. police (n.) 警察
+Call the police.
+打電話給警察。
+943. policy (n.) 政策
+The policy changed.
+政策改變了。
+944. polite (adj.) 有禮貌的
+He is polite.
+他很有禮貌。
+945. pool (n.) 游泳池
+The pool is open.
+游泳池開放了。
+946. poor (adj.) 貧窮的
+They are poor.
+他們很貧窮。
+947. popular (adj.) 受歡迎的
+This song is popular.
+這首歌很受歡迎。
+948. population (n.) 人口
+The population is growing.
+人口正在成長。
+949. position (n.) 位置
+What is your position?
+你的位置是什麼？
+950. possible (adj.) 可能的
+Anything is possible.
+一切皆有可能。
+951. post (n.) 郵件
+Send the post.
+寄出郵件。
+952. power (n.) 力量
+Knowledge is power.
+知識就是力量。
+953. practice (n.) 練習
+Practice makes perfect.
+熟能生巧。
+954. prepare (v.) 準備
+Prepare for the test.
+準備考試。
+955. present (n.) 禮物
+I got a present.
+我收到一個禮物。
+956. pressure (n.) 壓力
+He feels pressure.
+他感到壓力。
+957. pretty (adj.) 漂亮的
+She is pretty.
+她很漂亮。
+958. prevent (v.) 防止
+Prevent accidents.
+防止意外。
+959. price (n.) 價格
+The price is high.
+價格很高。
+960. private (adj.) 私人的
+This is private.
+這是私人的。
+961. problem (n.) 問題
+We need to solve this problem.
+我們需要解決這個問題。
+962. process (n.) 過程
+Learning is a long process.
+學習是一個漫長的過程。
+963. produce (v.) 生產
+The factory produces cars.
+這家工廠生產汽車。
+964. product (n.) 產品
+This product sells well.
+這個產品賣得很好。
+965. program (n.) 節目
+What program are you watching?
+你在看什麼節目？
+966. progress (n.) 進步
+She made great progress.
+她有很大的進步。
+967. project (n.) 專案
+The project is finished.
+專案完成了。
+968. promise (v.) 承諾
+He promised to help.
+他承諾要幫忙。
+969. protect (v.) 保護
+Protect the environment.
+保護環境。
+970. prove (v.) 證明
+Can you prove it?
+你能證明嗎？
+971. provide (v.) 提供
+They provide food.
+他們提供食物。
+972. public (adj.) 公共的
+This is a public place.
+這是公共場所。
+973. pull (v.) 拉
+Pull the door.
+拉門。
+974. push (v.) 推
+Push the button.
+按下按鈕。
+975. put (v.) 放
+Put it here.
+把它放這裡。
+976. quality (n.) 品質
+Quality matters.
+品質很重要。
+977. quarter (n.) 四分之一
+A quarter of the cake is gone.
+蛋糕少了四分之一。
+978. question (n.) 問題
+Ask a question.
+問一個問題。
+979. quick (adj.) 快的
+He is quick.
+他動作很快。
+980. quiet (adj.) 安靜的
+Please be quiet.
+請安靜。
+981. quite (adv.) 相當
+It is quite good.
+相當不錯。
+982. race (n.) 比賽
+They joined the race.
+他們參加比賽。
+983. rain (n.) 雨
+The rain stopped.
+雨停了。
+984. raise (v.) 舉起
+Raise your hand.
+舉起你的手。
+985. range (n.) 範圍
+This is the price range.
+這是價格範圍。
+986. rather (adv.) 寧願
+I would rather stay.
+我寧願留下。
+987. reach (v.) 到達
+We reached home.
+我們到家了。
+988. read (v.) 讀
+Read this book.
+讀這本書。
+989. ready (adj.) 準備好的
+I am ready.
+我準備好了。
+990. real (adj.) 真實的
+This is real.
+這是真的。
+991. reason (n.) 原因
+What is the reason?
+原因是什麼？
+992. receive (v.) 收到
+I received your letter.
+我收到你的信。
+993. recent (adj.) 最近的
+Recent events matter.
+最近的事件很重要。
+994. record (n.) 紀錄
+Break the record.
+打破紀錄。
+995. reduce (v.) 減少
+Reduce waste.
+減少浪費。
+996. refer (v.) 提到
+He referred to the plan.
+他提到那個計畫。
+997. reflect (v.) 反映
+This reflects reality.
+這反映了現實。
+998. refuse (v.) 拒絕
+She refused help.
+她拒絕幫助。
+999. region (n.) 地區
+This region is warm.
+這個地區很溫暖。
+1000. regret (v.) 後悔
+I regret my choice.
+我後悔我的選擇。
+1001. regular (adj.) 規則的
+Exercise is part of his regular routine.
+運動是他日常生活的一部分。
+1002. relate (v.) 有關
+This story relates to real life.
+這個故事和現實生活有關。
+1003. relationship (n.) 關係
+They have a good relationship.
+他們的關係很好。
+1004. relax (v.) 放鬆
+Listen to music and relax.
+聽音樂放鬆一下。
+1005. release (v.) 釋放
+The movie was released last week.
+這部電影上週上映。
+1006. remain (v.) 保持
+Please remain calm.
+請保持冷靜。
+1007. remember (v.) 記得
+Remember to call me.
+記得打電話給我。
+1008. remind (v.) 提醒
+Please remind me later.
+請之後提醒我。
+1009. remove (v.) 移除
+Remove your shoes.
+請脫鞋。
+1010. repeat (v.) 重複
+Repeat after me.
+跟我重複一次。
+1011. reply (v.) 回覆
+She didn’t reply.
+她沒有回覆。
+1012. report (n.) 報告
+Write a report.
+寫一份報告。
+1013. represent (v.) 代表
+This color represents hope.
+這個顏色代表希望。
+1014. require (v.) 需要
+This job requires experience.
+這份工作需要經驗。
+1015. research (n.) 研究
+He is doing research.
+他正在做研究。
+1016. resource (n.) 資源
+Water is a valuable resource.
+水是寶貴的資源。
+1017. respect (v.) 尊重
+Respect others.
+尊重他人。
+1018. respond (v.) 回應
+He didn’t respond.
+他沒有回應。
+1019. result (n.) 結果
+The result was good.
+結果很好。
+1020. return (v.) 回來
+She will return tomorrow.
+她明天回來。
+1021. rich (adj.) 富有的
+He is rich.
+他很有錢。
+1022. ride (v.) 騎
+Ride a bike.
+騎腳踏車。
+1023. right (adj.) 正確的
+This answer is right.
+這個答案是對的。
+1024. risk (n.) 風險
+There is a risk.
+有風險。
+1025. river (n.) 河流
+The river is long.
+這條河很長。
+1026. road (n.) 道路
+This road is busy.
+這條路很繁忙。
+1027. role (n.) 角色
+She plays an important role.
+她扮演重要角色。
+1028. room (n.) 房間
+Clean your room.
+整理你的房間。
+1029. rule (n.) 規則
+Follow the rules.
+遵守規則。
+1030. run (v.) 跑
+Run fast.
+跑快一點。
+1031. safe (adj.) 安全的
+This place is safe.
+這地方很安全。
+1032. same (adj.) 相同的
+We have the same idea.
+我們有同樣的想法。
+1033. save (v.) 儲存
+Save your work.
+儲存你的工作。
+1034. say (v.) 說
+Say something.
+說點什麼。
+1035. scene (n.) 場景
+This scene is beautiful.
+這個場景很美。
+1036. school (n.) 學校
+She goes to school.
+她去上學。
+1037. science (n.) 科學
+Science explains things.
+科學解釋事物。
+1038. score (n.) 分數
+He got a high score.
+他得了高分。
+1039. sea (n.) 海
+The sea is blue.
+大海是藍色的。
+1040. season (n.) 季節
+Spring is my favorite season.
+春天是我最喜歡的季節。
+1041. seat (n.) 座位
+Please take a seat.
+請坐下。
+1042. second (adj.) 第二的
+This is my second try.
+這是我第二次嘗試。
+1043. secret (n.) 秘密
+Keep it a secret.
+把它當作秘密。
+1044. section (n.) 部分
+Read this section.
+閱讀這一部分。
+1045. see (v.) 看見
+I can see you.
+我看得到你。
+1046. seek (v.) 尋找
+They seek help.
+他們尋求幫助。
+1047. seem (v.) 似乎
+He seems tired.
+他似乎很累。
+1048. sell (v.) 賣
+They sell fruit.
+他們賣水果。
+1049. send (v.) 寄送
+Send me an email.
+寄封電子郵件給我。
+1050. sense (n.) 感覺
+I have a bad sense about this.
+我對這件事有不好的感覺。
+1051. serious (adj.) 嚴肅的
+This is serious.
+這件事很嚴肅。
+1052. serve (v.) 服務
+They serve food here.
+這裡提供食物。
+1053. service (n.) 服務
+The service is good.
+服務很好。
+1054. set (v.) 設定
+Set the alarm.
+設定鬧鐘。
+1055. several (adj.) 幾個
+I have several ideas.
+我有幾個想法。
+1056. shake (v.) 搖動
+Shake the bottle.
+搖一搖瓶子。
+1057. share (v.) 分享
+Share your thoughts.
+分享你的想法。
+1058. sharp (adj.) 鋒利的
+This knife is sharp.
+這把刀很鋒利。
+1059. she (pron.) 她
+She is my sister.
+她是我妹妹。
+1060. shelf (n.) 架子
+Put it on the shelf.
+把它放在架子上。
+1061. shine (v.) 發光
+The stars shine.
+星星發光。
+1062. ship (n.) 船
+The ship sailed away.
+船開走了。
+1063. shirt (n.) 襯衫
+He wore a white shirt.
+他穿白色襯衫。
+1064. shock (n.) 震驚
+The news was a shock.
+這個消息令人震驚。
+1065. shoe (n.) 鞋子
+These shoes are new.
+這雙鞋是新的。
+1066. shoot (v.) 射擊
+The hunter shoots carefully.
+獵人小心射擊。
+1067. shop (n.) 商店
+This shop is popular.
+這家店很受歡迎。
+1068. short (adj.) 短的
+The meeting was short.
+會議很短。
+1069. should (aux.) 應該
+You should rest.
+你應該休息。
+1070. shout (v.) 大喊
+Don’t shout.
+不要大喊。
+1071. show (v.) 顯示
+Show me the way.
+帶我看看路。
+1072. shut (v.) 關上
+Shut the door.
+把門關上。
+1073. sick (adj.) 生病的
+He is sick today.
+他今天生病了。
+1074. side (n.) 邊
+Stand by my side.
+站在我身旁。
+1075. sign (n.) 標誌
+Read the sign.
+看那個標誌。
+1076. silence (n.) 安靜
+The room was in silence.
+房間一片安靜。
+1077. simple (adj.) 簡單的
+This is simple.
+這很簡單。
+1078. since (prep.) 自從
+I have lived here since 2020.
+我自 2020 年起住在這裡。
+1079. sing (v.) 唱歌
+She can sing well.
+她唱歌很好聽。
+1080. single (adj.) 單一的
+He is single.
+他是單身。
+1081. sister (n.) 姊妹
+My sister is a student.
+我妹妹是學生。
+1082. sit (v.) 坐
+Please sit here.
+請坐這裡。
+1083. situation (n.) 情況
+This situation is serious.
+這個情況很嚴重。
+1084. size (n.) 大小
+Choose the right size.
+選擇合適的尺寸。
+1085. skill (n.) 技能
+He has good skills.
+他有很好的技能。
+1086. sleep (v.) 睡覺
+I need sleep.
+我需要睡覺。
+1087. slow (adj.) 慢的
+He is slow.
+他動作很慢。
+1088. small (adj.) 小的
+This room is small.
+這個房間很小。
+1089. smart (adj.) 聰明的
+She is smart.
+她很聰明。
+1090. smell (v.) 聞
+Smell the flowers.
+聞聞花。
+1091. smile (v.) 微笑
+She smiled at me.
+她對我微笑。
+1092. smoke (n.) 煙
+The smoke is thick.
+煙很濃。
+1093. smooth (adj.) 平滑的
+The table is smooth.
+桌子很平滑。
+1094. snake (n.) 蛇
+The snake is dangerous.
+那條蛇很危險。
+1095. snow (n.) 雪
+Snow is falling.
+雪正在下。
+1096. so (adv.) 所以
+I was tired, so I left.
+我累了，所以離開。
+1097. social (adj.) 社會的
+Social issues matter.
+社會議題很重要。
+1098. society (n.) 社會
+We live in society.
+我們生活在社會中。
+1099. soft (adj.) 柔軟的
+This pillow is soft.
+這個枕頭很柔軟。
+1100. soil (n.) 土壤
+Plants grow in soil.
+植物生長在土壤中。
+1101. soldier (n.) 士兵
+The soldier stood guard.
+士兵站崗。
+1102. solid (adj.) 固體的
+Ice is solid.
+冰是固體。
+1103. solution (n.) 解決方案
+This is a solution.
+這是一個解決方案。
+1104. some (adj.) 一些
+Give me some water.
+給我一些水。
+1105. sometimes (adv.) 有時
+I sometimes walk.
+我有時散步。
+1106. son (n.) 兒子
+His son is young.
+他的兒子還小。
+1107. soon (adv.) 很快
+See you soon.
+很快見。
+1108. sorry (adj.) 抱歉的
+I am sorry.
+我很抱歉。
+1109. sound (n.) 聲音
+The sound is loud.
+聲音很大。
+1110. soup (n.) 湯
+This soup is hot.
+這湯很燙。
+1111. source (n.) 來源
+This is the source.
+這是來源。
+1112. south (n.) 南方
+Tainan is in the south.
+台南在南部。
+1113. space (n.) 空間
+We need space.
+我們需要空間。
+1114. speak (v.) 說話
+Speak slowly.
+說慢一點。
+1115. special (adj.) 特別的
+Today is special.
+今天很特別。
+1116. speed (n.) 速度
+The speed is high.
+速度很快。
+1117. spend (v.) 花費
+I spend money on food.
+我把錢花在食物上。
+1118. spirit (n.) 精神
+Keep your spirit up.
+保持精神。
+1119. sport (n.) 運動
+Basketball is my favorite sport.
+籃球是我最愛的運動。
+1120. spring (n.) 春天
+Spring is warm.
+春天很溫暖。
+1121. square (n.) 廣場
+The square is crowded.
+廣場很擁擠。
+1122. stage (n.) 舞台
+She stood on the stage.
+她站在舞台上。
+1123. stand (v.) 站立
+Please stand up.
+請站起來。
+1124. star (n.) 星星
+The stars are bright.
+星星很明亮。
+1125. start (v.) 開始
+Let’s start now.
+我們現在開始吧。
+1126. state (n.) 狀態
+He is in a good state.
+他的狀態很好。
+1127. station (n.) 車站
+Meet me at the station.
+在車站見。
+1128. stay (v.) 停留
+Stay here.
+留在這裡。
+1129. step (n.) 步驟
+Follow the steps.
+照著步驟做。
+1130. still (adv.) 仍然
+He is still waiting.
+他仍在等待。
+1131. stone (n.) 石頭
+The stone is heavy.
+那塊石頭很重。
+1132. stop (v.) 停止
+Stop talking.
+停止說話。
+1133. store (n.) 商店
+This store is big.
+這家店很大。
+1134. storm (n.) 暴風雨
+The storm is coming.
+暴風雨要來了。
+1135. story (n.) 故事
+Tell me a story.
+跟我說個故事。
+1136. street (n.) 街道
+The street is busy.
+這條街很熱鬧。
+1137. strong (adj.) 強壯的
+He is strong.
+他很強壯。
+1138. structure (n.) 結構
+The structure is complex.
+結構很複雜。
+1139. student (n.) 學生
+She is a student.
+她是學生。
+1140. study (v.) 學習
+Study hard.
+努力學習。
+1141. subject (n.) 科目
+Math is my favorite subject.
+數學是我最喜歡的科目。
+1142. success (n.) 成功
+Success takes time.
+成功需要時間。
+1143. successful (adj.) 成功的
+He is successful.
+他很成功。
+1144. such (adj.) 這樣的
+I like such music.
+我喜歡這樣的音樂。
+1145. sudden (adj.) 突然的
+A sudden rain came.
+突然下起雨來。
+1146. suffer (v.) 受苦
+They suffer a lot.
+他們吃了很多苦。
+1147. suggest (v.) 建議
+I suggest resting.
+我建議休息。
+1148. summer (n.) 夏天
+Summer is hot.
+夏天很熱。
+1149. support (v.) 支持
+I support you.
+我支持你。
+1150. sure (adj.) 確定的
+Are you sure?
+你確定嗎？
+1151. surface (n.) 表面
+The surface is smooth.
+表面很平滑。
+1152. surprise (n.) 驚喜
+It was a surprise.
+那是一個驚喜。
+1153. sweet (adj.) 甜的
+This cake is sweet.
+這個蛋糕很甜。
+1154. swim (v.) 游泳
+I can swim.
+我會游泳。
+1155. system (n.) 系統
+The system works.
+系統運作正常。
+1156. table (n.) 桌子
+The table is clean.
+桌子很乾淨。
+1157. take (v.) 拿
+Take this.
+拿這個。
+1158. talk (v.) 說話
+Let’s talk.
+我們談談。
+1159. tall (adj.) 高的
+He is tall.
+他很高。
+1160. task (n.) 任務
+Finish the task.
+完成任務。
+1161. shoe (n.) 鞋
+Those shoes go quite well with your clothes.
+那雙鞋跟你的衣服很搭。
+1162. shoot (v.) 射擊
+Two guys walked in and started shooting at people.
+兩個人走了進來並開始朝人們開槍。
+1163. shop (n.) 店鋪
+There is a candy shop on the corner.
+轉角處有間糖果店。
+1164. short (adj.) 短的
+She looks so pretty in her short skirt and boots.
+她穿短裙和靴子看起來很漂亮。
+(v.) 矮的
+The short man waited impatiently at the service counter.
+那個矮個子的男生在服務櫃臺等得不耐煩。
+1165. should (aux.) 應該
+We should not smoke here.
+我們不該在這裡抽菸。
+1166. shout (v.) 大叫
+Grandma always says that it is impolite to shout.
+奶奶常說大叫是非常不禮貌的行為。
+1167. show (v.) 展示
+Mom asked me to show her how to turn on the computer.
+媽媽叫我教她如何將電腦開機。
+1168. shrink (v.) 縮小
+Washing certain clothes in hot water might cause them to shrink.
+某些衣服如果用熱水清洗可能會縮水。
+1169. shut (v.) 關
+Dad had to remind me to shut the door again.
+爸爸不得不再次提醒我將門關上。
+1170. sick (adj.) 生病
+There is nothing that makes me more sad than a sick child.
+沒有什麼比一個生病的孩子讓我更加難過。
+1171. side (n.) 邊
+We raked all of the leaves over to the left side of the yard.
+我們把樹葉全掃到院子左側。
+1172. sign (v.) 簽名
+Bill needs you to sign these papers right away, or we will not get paid.
+Bill 需要你馬上簽這些文件，否則我們將拿不到薪資。
+1173. signal (v.) 信號
+The warning signal is on; please stay where you are.
+警示燈亮了，請留在原地。
+1174. silence (n.) 沉默
+The kid's cry broke the silence.
+這孩子的哭聲打破了沉默。
+1175. silk (n.) 絲
+Suzhou is famous for the beautiful silk that it produces.
+蘇州以出產漂亮的絲綢而聞名。
+1176. silver (n.) 銀
+Many people prefer to invest in silver rather than gold.
+很多人喜歡投資白銀勝過黃金。
+(adj.) 銀色
+The silver BMW is the most popular model this year.
+銀色 BMW 是今年最受歡迎的車款。
+1177. similar (adj.) 相似的
+We have similar tastes in music.
+我們喜歡的音樂很相似。
+1178. simple (adj.) 簡單的
+Meg wrote a simple letter to him to explain her feelings.
+Meg 寫了封簡單的信給他來說明自己的感受。
+1179. since (conj.) 自從.......
+We've lost five games since you left the team.
+自從你離開隊伍，我們已經輸了五場比賽。
+(conj.) 因為
+Since you have finished your homework, you may watch television.
+既然你已經完成功課，你可以看電視了。
+1180. sing (v.) 唱歌
+My grandmother used to sing me a song every night before I went to sleep.
+以前我祖母每晚都會在我睡覺前唱歌給我聽。
+1181. single (adj.) 單一的
+The Knicks lost the game by a single point last night.
+尼克斯隊昨晚以一分之差輸掉了比賽。
+(adj.) 單身的
+Clara enjoys being a single woman in the city.
+Clara 享受在城市做一個單身的女人。
+1182. sister (n.) 姐妹
+Grace loves her younger sister very much.
+Grace 很喜歡她的妹妹。
+1183. sit (v.) 坐
+Sit down. You don't have to stand there all the time.
+坐吧。你不需一直站在那裡。
+1184. situation (n.) 景況
+They are not that worried about their financial situation.
+他們不是太擔心自己的財務景況。
+(n.) 處境
+Do you know that he is in a difficult situation?
+你知道他正身處困境嗎。
+1185. size (n.) 尺寸
+The size of the gift does not matter, for it is the thought that counts.
+禮物大小並不重要，心意才重要阿。
+1186. skill (n.) 技巧
+He doesn't have the skills to do this job.
+他沒有做這個工作的技能。
+1187. skin (n.) 皮膚
+Caitlin has very fair skin and big blue eyes.
+Caitlin 具有非常白皙的皮膚和藍色的大眼睛。
+1188. skirt (n.) 裙子
+Sue wore a long skirt and a blouse to the party.
+Sue 穿著一件長長的裙子和襯衫去參加。
+1189. sky (n.) 天空
+The sky was clear and blue as we set off towards the beach.
+晴朗和藍色的天空正是為我們去海灘準備的。
+1190. slave (n.) 奴隸
+Marsha's great-grandmother was a slave in Virginia before the Civil War.
+Marsha 的曾祖母是南北戰爭前在弗吉尼亞州的奴隸。
+(n.) 奴隸般受控制的人
+She is a slave to her work.
+她的工作是奴隸般受控制的人。
+1191. sleep (n.) 睡眠
+After twelve hours of restful sleep, Anita was ready for another day.
+Anita 經過12小時舒適的睡眠後，準備迎接新一天的到來。
+(v.) 睡覺
+Lucia loves to play, but she does not like to sleep.
+Lucia 很愛玩，但她不喜歡睡覺。
+1192. slide (v.) 滑動
+Children love to slide down this hill in the winter.
+孩子們在冬季喜歡在這座山滑下。
+1193. slip (v.) 溜走
+When the teacher turned to write on the board, we managed to slip away.
+當老師轉過身在黑板上寫字時，我們設法溜走。
+(v.) 滑跤
+Allison slipped on the wet sidewalk and twisted her ankle.
+Allison 在潮濕的行人道上滑倒扭傷了腳踝。
+1194. slow (adj.) 慢的
+Frank noticed many slow runners as he passed.
+當 Frank 路過時看到很多慢跑者。
+1195. small (adj.) 小的
+The small child sadly walked away.
+那個小孩傷心地走開了。
+1196. smart (adj.) 聰敏的
+Marie is a smart little girl.
+Marie 是一個聰明的小女孩。
+1197. smash (v.) 打碎
+The boy smashed his father's favorite vase.
+這男孩打破他父親最喜歡的花瓶。
+1198. smell (v.) 聞
+Stephanie likes to go to the park to smell the flowers and feel the warm sunshine.
+Stephanie 喜歡去公園聞花香和感受溫暖的陽光。
+1199. smile (v.) 微笑
+We tried everything to get Lisa to smile.
+我們想盡辦法讓Lisa 微笑。
+1200. smoke (n.) 煙
+The smoke from her cigarette filled the room and made me cough.
+她香煙的煙霧填滿了整個房間讓我咳嗽。
+(v.) 抽煙
+You are not allowed to smoke in here.
+你不可以在這裡抽菸。
+1201. smooth (adj.) 平滑的
+Marie has smooth skin and beautiful dark eyes.
+Marie 有著光滑的肌膚與深邃的黑眸。
+1202. snack (n.) 點心
+Most foreign countries have their own specific snacks.
+每個外國國家都有自己獨特的點心。
+1203. snake (n.) 蛇
+We saw a large snake cross our path.
+我們看到一條大蛇穿過我們的道路。
+1204. sneeze (v.) 打噴嚏
+I have a cold and can't stop sneezing.
+我感冒了而且不停的打噴嚏。
+1205. snow (n.) 雪
+Grace and Lucy went out to play in the snow.
+Grace 和 Lucy 出去玩雪。
+(v.) 下雪
+The weather has become so cold that it snows all the time.
+天氣變得很冷而且一直在下雪。
+1206. so (adv.) 如此
+Why didn't you call? We were so worried!
+你怎麼不打電話?我們好擔心啊!
+1207. soap (n.) 肥皂
+Soap is used to clean clothes and bodies.
+肥皂是用來洗衣服跟身體的。
+1208. social (adj.) 社會的
+Social stability is important to every country.
+社會的穩定對每個國家來說是非常重要的。
+(adj.) 社交的
+Social networking has become a primary means of communication.
+社交網絡已經成為通訊的主要途徑。
+1209. society (n.) 社會
+Chinese society values family relationships to a high degree.
+華人社會非常重視家庭關係。
+1210. soft (adj.) 軟的
+This bed is very soft and comfortable to lie on.
+這床躺上去非常的舒適及柔軟。
+1211. soil (n.) 土壤
+The soil is fertile making it easy to grow vegetables.
+肥沃的土壤使得蔬菜容易種植。
+1212. soldier (n.) 士兵
+Every country has soldiers to protect its borders.
+每個國家都有士兵去保護他們的國界。
+1213. solid (adj.) 堅固的
+The chair is made of solid wood and will last a lifetime.
+這椅子是由堅固的木頭作成並且將能維持一輩子。
+1214. solve (v.) 解決
+Students are expected to solve all kinds of problems in universities.
+學生在大學是被期待能去解決各種的問題。
+1215. some (adj.) 一些
+There are some global issues that cannot be solved without cooperation from every country.
+有些全球的議題沒有和每個國家合作是不能被解決的。
+1216. son (n.) 兒子
+Fathers usually teach their sons how to be men.
+爸爸通常教他們的兒子如何做個男人。
+1217. song (n.) 歌曲
+What is the national song of Taiwan called?
+台灣的國歌叫做什麼?
+1218. soon (adv.) 很快地
+Will World War Three start soon?
+第三次世界大戰將會很快開始嗎?
+1219. sorry (adj.) 遺憾
+He felt sorry for her trouble but was unable to help.
+他為她的麻煩感到遺憾但是沒辦法去幫忙。
+(adj.) 抱歉
+I am sorry for misunderstanding what you were trying to do.
+很抱歉我誤解你想要去做的事情。
+1220. sort (n.) 種類
+There are many sorts of electronics produced in China.
+許多種的電子產品是由中國製造的。
+1221. soul (n.) 靈魂
+Most religions believe that people have souls which live on after death.
+許多宗教相信人死後靈魂會繼續生存。
+1222. sound (n.) 聲音
+The sound from the speaker is amazingly clear.
+那擴音器發出的聲音清晰到讓人驚訝。
+1223. south (n.) 南方
+I live in the south where there are fewer people.
+我住在人口較少的南方。
+1224. space (n.) 空間
+The space she chose to store these things is perfect.
+她選擇要儲存這些東西的空間很完美。
+1225. speak (v.) 說
+Please don't speak about things you do not understand.
+請不要講一些你自己都不清楚的事情。
+1226. special (adj.) 特別的
+Dad refuses to tell anyone his special recipe for this spicy chicken.
+爸爸拒絕把辣雞肉的獨門配方告訴任何人。
+1227. speech (n.) 演說
+The professor's speech was very interesting.
+教授的演講非常有趣。
+1228. speed (n.) 速度
+The new Ford Mustang can reach a speed of 60 m.p.h. in under six seconds.
+新的福特 Mustang 汽車可以在不到六秒的時間達到每小時60英里數的速度。
+1229. spell (v.) 拼字
+Do you know how to spell this word?
+你會拼這個字嗎?
+1230. spend (v.) 花費(金錢,時間)
+Global spending has increased to the point where people are willing to buy things on credit.
+全球的消費力已經進展到人們願意用分期付款來買東西的地步。
+1231. spirit (n.) 精神
+A community spirit helps societies to develop.
+團隊精神有助於社會的發展。
+1232. spot (n.) 地點
+Hawaii is a famous spot for vacations.
+夏威夷是一個有名的度假景點。
+1233. spread (v.) 散佈
+The wreckage was spread all over the highway.
+這意外事故的殘骸散佈在整條公路上。
+(v.) 擴展
+Most international business is spreading to China as companies open factories there.
+許多國際貿易公司都擴展到中國來開工廠。
+1234. spring (n.) 春天
+Spring comes just before summer.
+春天在夏天之前到來。
+1235. spy (n.) 間諜
+The spy stole business secrets from that company.
+這間諜從那公司偷走了商業機密。
+1236. square (adj.) 正方形的
+Most computers are square.
+大多的電腦都是正方形的。
+(n.) 廣場
+The square in the middle of the town was full of protesters.
+在這鎮中央的廣場擠滿了抗議者。
+1237. stage (n.) 舞台
+The stage in the theatre was full of dancers.
+這戲院的舞台上充滿了舞者。
+(n.) 時期
+She has a terminal stage of cancer and will not survive.
+她罹患癌症末期即將過世。
+1238. stairs (n.) 階梯
+Most apartment buildings have stairs.
+大部分公寓都有樓梯。
+1239. stamp (n.) 郵票
+All post offices require stamps on letters.
+郵局都會要求信上要貼郵票。
+1240. stand (v.) 站立
+The teacher told me to stand and recite the poem.
+老師叫我站起來背詩。
+1241. star (n.) 星星
+It is possible to navigate by following the stars.
+靠星星航行是有可能的。
+1242. start (v.) 開始
+Please start your story at the beginning.
+請從頭開始說你的故事。
+(v.) 啟動
+Microsoft Windows has the famous start button.
+微軟的 Windows 擁有著名的啟動按鈕。
+1243. starve (v.) 餓死
+There are many children in Africa that are starving due to a lack of food.
+有很多非洲的小孩由於缺乏食物快要餓死。
+1244. state (n.) 情況
+President Obama spoke about the state of the U.S. economy at the press conference.
+歐巴馬總統在記者會上講了很多有關美國經濟的情況。
+(n.) 國家
+Most states are represented by the United Nations.
+很多國家派代表參加聯合國。
+1245. station (n.) 站
+You can put gas in your vehicle at a gas station.
+你可以在加油站幫你的汽車加油。
+(n.) 局
+Sue went to the police station to report the details of the accident.
+Sue 去警察局說明車禍的細節。
+(n.) 署
+Angel Island is a famous immigration station in San Francisco.
+天使島是舊金山著名的移民署。
+1246. status (n.) 地位
+Doctors and lawyers have high status in society.
+醫生和律師在社會上有很高的地位。
+(n.) 情況
+What is the status of this project?
+這個計劃的情況如何?
+1247. stay (v.) 停留
+Businessman often have to stay in hotels.
+商人常常需要待在旅館。
+1248. steal (v.) 偷竊
+Apple claims that Samsung steals ideas from it all the time.
+蘋果聲稱三星總是從它那裡竊取創意。
+1249. steam (n.) 蒸氣
+Steam was used to drive certain types of engines in trains.
+蒸氣曾被用來驅動火車上某些類型的發電機。
+1250. steel (n.) 鋼
+Steel is used in the production of knives and machines.
+鋼鐵被用來當作生產刀子和機器的原料。
+1251. step (n.) (一)步
+Please take a step forward.
+請往前一步。
+1252. stick (n.) 木棍
+The boy picked up a stick and dragged it along behind him.
+那個男孩撿起一根木棍然後把它放在背後拖著。
+(n.) 手杖
+The old man uses a walking stick to help get around.
+那個老人用拐杖輔助他四處走動。
+1253. still (adj.) 安靜的
+The wind has died down and it has become very still.
+風逐漸減弱然後靜止。
+1254. stomach (n.) 胃
+After eating too much, one's stomach may become uncomfortable.
+吃了太多東西胃可能會變得不舒服。
+1255. stone (n.) 石頭
+Stone is a popular building material in countries where bricks are impossible to make.
+在無法做出磚塊的國家，石頭是常見的建築原料。
+1256. stop (v.) 停止
+The rain has finally stopped.
+雨終於停止了。
+1257. store (n.) 商店
+Most stores in Taiwan stay open till 10 o'clock.
+大多數台灣的商店到10點還在營業。
+1258. storm (n.) 風暴
+When travelling by sea, it is possible to encounter dangerous storms.
+在海上旅行時可能會遇到危險的暴風雨。
+1259. story (n.) 故事
+Children love to listen to stories about magical things.
+小孩子喜歡聽關於神奇的故事。
+1260. straight (adj.) 直的
+Asian people tend to have straight black hair.
+亞洲人傾向有直的黑髮。
+1261. strange (adj.) 陌生的
+If you see a strange person in your house, you should call the police.
+當你看到一個陌生人在你的房子裡時，你應該報警。
+1262. stream (n.) 溪流
+Many small streams have become polluted due to factory emissions.
+由於工廠的排放，許多小溪流已被污染。
+1263. street (n.) 街道
+Cities are divided by streets and roads.
+城市被街道劃分。
+1264. stretch (v.) 伸展
+Before exercising, it is a good idea to stretch to prevent injury.
+在運動之前，用伸展來避免受傷是個好主意。
+(v.) 伸直
+The first baseman had to stretch to get the throw, but the runner was still called out.
+雖然一壘手必須伸直手臂來接住球，跑者依然被判出局。
+1265. strike (v.) 打擊
+He did not see the ball and it struck him in the face.
+他沒有注意到球以至於被球打中臉。
+(n.) 罷工
+The workers were not happy with their low pay and went on strike.
+工人們因不滿他們低廉的薪水而罷工。
+1266. string (n.) 細繩
+Dad told us to get some string and tie up these newspapers.
+爸爸叫我們去拿些細繩來綑綁這些報紙。
+1267. strong (adj.) 強壯的
+The strong walls protected the fort during the attack.
+在攻擊中，堅固的城牆保護了堡壘。
+1268. structure (n.) 結構
+This structure is very stable and will stand for a long time.
+這個結構很穩定，可以撐很長一段時間。
+1269. struggle (v.) 掙扎
+Students often struggle to understand their classes when they first enter university.
+學生剛進大學時，往往很努力的去了解他們的課程。
+1270. study (v.) 研究
+He was studying mathematics at Stanford University at that time.
+他當時在史丹佛大學學數學。
+(v.) 學習
+Taiwanese students need to study hard in order to get into a good university.
+台灣的學生必須努力學習來考進好的大學。
+1271. stupid (adj.) 笨的
+She always believes that there are no stupid children in the world.
+她總是相信世上沒有笨小孩。
+1272. subject (n.) 科目
+There are many subjects available for students to study in University.
+大學有提供許多科目給學生們修習。
+1273. substance (n.) 物質
+Ice is a solid substance.
+冰是種固態物質。
+1274. substitute (n.) 代替
+Honey can be a substitute for sugar in many recipes.
+蜂蜜在許多方面可以替代糖。
+1275. succeed (v.) 成功
+It is hard to succeed at any study if one does not have proper guidance.
+任何研究如果沒有正確的方向指引是很難成功的。
+1276. such (adj.) 如此的
+Einstein was such a smart man.
+Einstein 就是這麼一個聰明人。
+1277. sudden (adj.) 突然
+The sudden news of his death surprised us all.
+他的驟逝震驚了我們所有人。
+1278. suffer (v.) 遭受
+Isabella suffered greatly, but she is now recovering from the accident.
+Isabella 遭受很大折難，但她現在正在從事故中逐漸恢復。
+1279. sugar (n.) 糖
+Sugar is used to sweeten all kinds of food products.
+糖是用來讓所有食物變甜的。
+1280. suggest (v.) 提議
+What do you suggest I do?
+你建議我怎麼做。
+1281. suit (n.) 套裝
+It is expected that business people will wear suits to meetings.
+商務人士是被期待要穿著套裝赴會的。
+1282. summer (n.) 夏天
+Summer is the hottest time of the year.
+夏天是一年之中最熱的時候。
+1283. sun (n.) 太陽
+The sun is being used to generate solar energy.
+太陽正被用來生產太陽能。
+1284. supervise (v.) 監督
+In companies workers are supervised by their managers.
+在公司裏，員工是被他們的經理監督的。
+1285. supply (v.) 提供
+Ken said that we need to supply our own food on this trip.
+Ken 說在這趟旅程中我們必須自己提供食物。
+(v.) 供給
+The government needs to supply the necessary funds for this project.
+政府必須提供必要資金給這個計畫。
+1286. support (v.) 支持
+I'm working hard to support my family.
+我努力工作支撐我的家庭。
+(v.) 支撐
+This wall will support the building and prevent it from collapsing.
+這道牆是用來支撐這棟建築預防它倒塌。
+1287. suppose (v.) 認為
+I suppose that we will have to cancel our trip.
+我認為我們應該取消我們的旅行。
+1288. suppress (v.) 壓制
+It is impossible to suppress the human desire for freedom.
+壓制人們對自由的渴望是不可能的。
+1289. sure (adj.) 確定
+I'm sure he will succeed one day.
+我確定他將來一定會成功。
+1290. surface (n.) 表面
+The surface of the lake is quite smooth.
+湖的表面非常平滑。
+1291. surprise (v.) 給...驚喜
+Sheila thinks it will be easy to surprise your mother.
+Sheila 認為給你媽媽驚喜並不難。
+1292. surround (v.) 包圍
+Her problems seemed to surround her on all sides.
+她的問題似乎四處包圍著她。
+1293. survive (v.) 倖存
+We do what we need in order to survive.
+為了倖存，我們做我們需要做的。
+1294. suspect (v.) 懷疑
+The police suspect the robbers knew what time to enter the building.
+警察懷疑那些盜匪早已知道要在什麼時候進入那座建築物。
+(n.) 嫌疑犯
+He is a suspect in the murder of three people.
+他是個殺了三個人的嫌疑犯。
+1295. suspend (v.) 吊銷
+His license was suspended because of drunk driving.
+他的駕照因為酒駕而被吊銷。
+1296. swallow (v.) 吞嚥
+Some snakes can swallow large animals.
+有些蛇能吞嚥龐大的動物。
+1297. swear (v.) 發誓
+A judge will ask people to swear to tell the truth before they give testimony.
+法官會要求證人在給證詞之前發誓講出的都是事實。
+1298. sweet (adj.) 甜的
+Chocolate is a sweet dessert.
+巧克力是甜的點心。
+1299. swim (v.) 游泳
+Fish swim in the sea.
+魚在海裡游泳。
+1300. symbol (n.) 象徵
+Most countries use their flags as a symbol.
+大部分國家以他們的國旗作為象徵。
+1301. sympathy (n.) 同情
+He had a lot of sympathy for the student's troubles.
+他對學生所遇到的困難感到非常同情。
+1302. system (n.) 系統
+Everyone knows the system does not work, but we carry on using it.
+大家都知道這個系統無法使用，但我們還是繼續用。
+1303. table (n.) 桌子
+The table was made from the finest hardwood.
+那張桌子是由最好的硬木做成的。
+1304. tail (n.) 尾巴
+The lizard used its tail to fight off the snake.
+蜥蜴用它的尾巴來擊退蛇。
+1305. take (v.) 拿
+Please take the book to the library for me.
+請幫我把那本書拿到圖書館。
+(v.) 搭乘
+My friend took me to Kenting last week in his new Lexus.
+上個星期我朋友開他的凌志新車帶我到墾丁。
+1306. talk (v.) 說話
+That guy really loves to talk.
+那個傢伙真的很愛說話。
+1307. tall (adj.) 高的
+The tall basketball player laughed at the shorter guys as he caught the ball.
+那個高個的籃球員搶到球時取笑了那些比較矮的人。
+1308. target (n.) 靶子
+He painted a large target on the wall for the game.
+他畫了很大的靶子在墙上來玩遊戲。
+(n.) 目標
+His target for this year is to make \$1 million in profit.
+他今年的目標是賺取一百萬的盈利。
+1309. task (n.) 工作
+His daily tasks are both difficult and tiring.
+他每天的工作都是很辛苦而累人。
+(n.) 任務
+That task can only be done by a specialist.
+這項任務只能由專家來完成。
+1310. taste (v.) 嚐起來
+The soup tastes too salty for me so I can't eat it.
+湯的味道對我來說太鹹了，我喝不下去。
+1311. tax (n.) 稅金
+I should pay a lot of tax because I am filthy rich.
+我應繳很多稅金因為我很富有。
+1312. tea (n.) 茶
+After they finished their scheming, they sat down and enjoyed a cup of tea.
+他們完成了這個策劃後就坐下來享受一杯茶。
+1313. teach (v.) 教導
+His parents taught him how to survive in the modern world.
+他的父母教導他如何在現代世界存活。
+1314. team (n.) 隊伍
+The team consisted of men and women of various shapes and sizes.
+這個團隊裡面包含了不同大小體格身形的男女。
+1315. tear (n.) 眼淚
+The student had tears in her eyes as she shouted at the crowd.
+學生眼眶泛著淚對著人群吶喊。
+1316. tear (v.) 撕裂
+He picked up a copy of the treaty and started to tear it in two.
+他拿起一份條約，並開始將它撕成兩半。
+1317. tell (v.) 告訴
+Please tell me some more interesting facts about this country.
+請告訴我關於這個城市的一些有趣的事實。
+1318. term (n.) 時期
+The president was fairly popular during his first term in office.
+總統在第一個任期時很受大家的歡迎。
+(n.) 學期
+The students were excited that the term was coming to an end.
+同學們興奮的是這個學期要結束了。
+1319. terrible (adj.) 可怕的
+Everyone thought the students drawings were really terrible.
+每個人都認為學生的作品很可怕。
+1320. territory (n.) 領土
+We need to protect our territory from foreign invaders.
+我們要保護我們的領土以防外來者的入侵。
+1321. terror (n.) 恐怖
+Many older people remember the governement with terror.
+許多上了年紀的人還記得政府的恐怖。
+1322. test (n.) 測試
+When we were young we thought tests were the most important thing in the world.
+我們小的時候都覺得考試是世界上最重要的事情。
+1323. than (conj.) 比......
+He always says he has more homework than me.
+他總是說他的功課比我多。
+1324. thank (v.) 感謝
+You should always try to thank people who help you become a better person.
+你永遠必須對那些讓你變得更好的人心存感激。
+(n.) 感謝
+We always give thanks to God before we eat a family meal.
+我們家用餐前會先感謝主。
+1325. that (pron.) 那
+That's a nice pair of shoes. Where did you buy them?
+那真是雙好鞋你在哪裡買的?
+1326. the (art.) 這
+There was a big problem yesterday. The student shouted at the teacher in class.
+昨天那真是場災難 有學生對老師大吼大叫。
+(n.) 那(定冠詞)
+In summer the days are hot and humid.
+夏天的天氣總是又熱又濕。
+1327. theater (n.) 戲院
+I went to the theater last week to see the latest international play.
+我上星期去電影院觀賞最新的巨獻。
+(n.) 劇院
+Young people don't like to visit the theater.
+年輕人總是不太喜歡去劇院。
+1328. their (pron.) 他們的
+Can you please give me their schedule for tomorrow?
+你可以給我他們明天的行程嗎?
+1329. theirs (pron.) 他們的東西
+Those bags are not ours. They must be theirs.
+那些袋子並不是我們的一定是他們的。
+1330. them (pron.) 他(她、它們)
+Please take the stolen money and give it to them.
+請把偷來的錢還給他們。
+1331. then (adv.) 然後
+First, let's look at the crime scene, and then we can interview the witnesses.
+首先，讓我們看一看犯罪現場，然後我們就可以見證人了。
+1332. theory (n.) 理論
+That is an amazing theory, but for me it makes no sense.
+這是一個驚人的理論，但對我來說沒有任何意義。
+1333. there (adv.) 那裡
+If you look over there, you can see the oldest tree in the park.
+如果你看那邊，能看到公園最古老的樹。
+1334. these (pron.) 這些
+Those shoes don't fit, but these do.
+那些鞋子不適合，但這些例外。
+(det.) 這些的
+These books are good, but you should find something a little easier.
+這些書雖然很好，但是你應該去找一些比較容易的。
+1335. they (pron.) 他們(主詞)
+The old politicians are well respected, but it is time they retired.
+雖然老政客值得尊敬，但該是他們退休的時候了。
+1336. thick (adj.) 厚的
+In winter it is a sensible idea to wear a thick jacket.
+在冬天穿著一件厚夾克是合理的想法。
+1337. thin (adj.) 薄
+He thought the soup was thin and tasteless.
+他認為這碗湯淡而無味。
+(adj.) 瘦
+He lost so much weight that everyone thinks he is too thin.
+他體重下降很多，大家都認為他太瘦了。
+1338. thing (n.) 事
+We will deal with this pressing thing later in the meeting.
+我們之後會在會議中處理這項緊急事件。
+(n.) 物
+What do you call that thing next to the computer?
+你稱電腦旁邊的東西叫甚麼?
+1339. think (v.) 想
+Some people still think the Earth is only several thousand years old.
+有些人仍然認為地球只存在數千年。
+(v.) 認為
+She thinks it is not a good idea to give the students too much homework.
+她認為出很多作業給學生不是個好主意。
+1340. third (n.) 第三
+He ran so fast and managed to finish third in the race.
+他跑得很快並在這比賽中贏得第三名。
+(adj.) 第三的
+This country won third place in the basketball competition at the 2012 Olympic games.
+這個國家在2012年奧運會籃球比賽中獲得季軍。
+1341. this (pron.) 這
+This is my country and I will protect it from invasion.
+這是我的國家，我會保護它免受入侵。
+(adj.) 這個
+This is also a problem for everyone around the world.
+這也是全世界每個人的問題。
+1342. those (pron.) 那些
+Those are the shoes I told you about before.
+那些是我之前跟你說過的鞋子。
+(det.) 那些的
+Those young girls are all her children.
+那些年輕女生都是她的小孩。
+1343. though (conj.) 雖然
+Though he tried so hard, he couldn't finish the race.
+雖然他很努力嘗試，但是他還是無法完成比賽。
+(conj.) 儘管
+Even though it was raining outside, he still wanted to play basketball.
+儘管外面正下著雨，他仍然想去打籃球。
+1344. thought (n.) 思維
+He put a lot of thought into how he should approach the problem of writing his essay.
+他把很多想法放到他如何處理寫論文的問題。
+(n.) 思慮
+His thoughts on the problem of globalisation are famous around the world.
+他在全球化問題方面的見解讓他舉世聞名。
+1345. threaten (v.) 威嚇
+If you threaten somebody with a gun, the police will come to check on you.
+如果你拿著槍威脅人，警察就會來調查你。
+1346. through (prep.) 穿越
+He picked up the brick and threw it through the large window.
+他拿起磚塊並丟向那個大窗戶。
+1347. throw (v.) 丟;擲
+Please don't throw balls in the library.
+請不要在圖書館內丟球。
+1348. thus (adv.) 因此
+He didn't pass his exam; thus, he needed to take it yet again.
+他沒有通過考試，因此他需要重考。
+1349. tie (v.) 綁緊
+If you forget to tie your shoes then you may fall and hurt yourself.
+如果你忘了綁鞋帶，你可能會跌倒和傷到自己。
+1350. tight (adj.) 緊的
+My pants are too tight now so I need to diet.
+我的褲子現在太緊了，所以我需要節食。
+1351. time (n.) 時期
+The first part of the twentieth century was a time of wars throughout the world.
+二十世紀初期在全世界各地都還是有戰爭。
+(n.) 時間
+I don't have enough time to finish my homework today.
+今天我沒有足夠的時間去完成我的作業。
+1352. tin (n.) (英)罐頭
+As a child in England I thought soup always came in tins.
+做為一個英國小孩，我認為湯應該要裝在罐頭裡。
+1353. tiny (adj.) 微小的
+That tiny gadjet costs more than my old car.
+那個小機件所花的錢比我的舊車還貴。
+1354. tire (v.) 使疲累
+My friend takes his kid to the beach every week to tire him out before bed.
+為了在睡覺前消耗孩子的體力，我朋友每個周末都帶他的孩子去海邊。
+1355. title (n.) 題目
+He could not decide on what title to give his essay.
+他無法決定論文要下什麼標題。
+(n.) 書名
+The title of my favorite book is On the Road.
+我最喜歡的書的書名是 On the Road.
+1356. to (prep.) 去......
+Please take this money and give it to the man in the shiny suit.
+請把這些錢拿給穿著亮色西裝的男人。
+1357. today (n.) 今天
+Today is such a nice day that I do not want to stay inside and work.
+我不想待在裡面工作，今天是多美好的一天啊!
+(adv.) 今天
+Today you seldom see people riding horses on the roads.
+如今你很少看到人們騎著馬在馬路上走。
+1358. together (adv.) 一起
+They always eat lunch together on Thursdays and Fridays.
+每個週四和週五，他們總是一起吃午餐。
+1359. tomorrow (n.) 明天
+Don't wait until tomorrow to do what you need to do today.
+今日事今日畢。
+(adv.) 明天
+Please come tomorrow to discuss your work with me in my office.
+明天請來我的辦公室討論你的工作。
+1360. tone (n.) 腔調
+In some parts of England people speak with tones that are different from standard English.
+在英國一些地方，人們說話的腔調跟標準英語是不同的。
+(n.) 語氣
+The teacher's tone of voice indicated that he was annoyed with his students.
+老師的語氣顯示出他被他的學生惹惱了。
+(n.) 音調
+Mandarin has four main tones making it a difficult language for English speakers to learn.
+中文有四種不同的主要語調，對英語系國家的人而言，在學習上會較為困難。
+1361. tongue (n.) 舌頭
+He cried out loud when he bit his tongue while eating a sandwich.
+他哭得很大聲當他吃三明治時咬到舌頭。
+1362. tonight (adv.) 今晚
+He asked her out, but she said she was washing her hair tonight.
+他邀她出去，但她說她今晚要洗頭。
+1363. too (adv.) 也
+The founder of Facebook is young, clever, and very rich too!
+臉書的創辦人年輕、聰明，而且也很有錢!
+(adv.) 太
+Please do not drive too close to other cars on the highway.
+在高速公路上開車時不要和其他車距離太近。
+1364. tool (n.) 工具
+A good workman will take excellent care of his tools.
+一個好工人將會好好保養它的工具。
+1365. tooth (n.) 牙齒
+She lost a tooth when she fell playing baseball.
+她在打棒球的時候跌倒並掉了一顆牙齒。
+1366. top (adj.) 頂尖的
+When he graduates, he wants to climb quickly in his career to become a top executive.
+當他畢業後，他想快速衝刺他的事業為了當頂尖執行長。
+(n.) 頂部
+After climbing the mountain for over four hours, they finally saw the top.
+歷經四小時的攀爬，他們終於看到山頂了。
+1367. total (n.) 總數
+The football team in claret and blue scored a total of four goals against their biggest rival.
+身穿深紅和藍色衣服的足球隊在與他們最強的對手比賽時，總共得了四分。
+(adj.) 總計的
+The total cost of his student loan will take over 10 years to pay.
+總計他的學貸需要花十年來償還。
+1368. touch (v.) 摸
+Please do not touch the overpriced clothes in this shop.
+請不要在這間店裡觸摸定價過高的衣服。
+(v.) 碰
+There was a big crash in the bike race when the two riders touched wheels.
+在自行車比賽時出了一場大車禍，即兩位車手的車輪相撞。
+1369. toward (prep.) 朝著.......
+He walked towards the thief and hit him hard in the face.
+他朝著小偷走去，並猛力地打了他的臉。
+1370. town (n.) 城鎮
+The town was small yet full of interesting people.
+這個城鎮很小但充滿有趣的人。
+1371. track (n.) 蹤跡
+He spent two hours training on the track last night
+他昨晚花了兩個小時在跑道上自我訓練
+1372. trade (n.) 行業
+In Taiwan, not many young people like to work in manual trades so the quality of workmanship is often lower than in other developed countries.
+在台灣並不是很多年輕人喜歡投入手工業，所以台灣手工藝的品質比其他開發中國家差很多。
+(n.) 貿易
+Animal lovers are very concerned about the trade in shark fins in Asia.
+動物愛好者很擔心在亞洲鯊魚鰭交易的問題。
+1373. tradition (n.) 傳統
+Taiwan is very fortunate to have many residents who respect old traditions.
+台灣很幸運的擁有很多尊敬傳統的居民。
+1374. traffic (n.) 交通(量)
+I really hate to travel on Friday afternoons because the traffic is terrible.
+我很討厭在禮拜五下午旅遊，因為交通非常擁擠。
+1375. train (n.) 火車
+The train is never on time, so I am always late for work.
+火車從不準時，所以我總是上班遲到。
+(v.) 訓練
+My friend had to train for several years to be a furniture maker-- which is why he is rich.
+我的朋友為了當個傢俱製作者必須訓練很多年，這就是為什麼他這麼有錢。
+1376. transport (v.) 運輸
+Companies transport billions of dollars of goods around the world everyday.
+公司每天運輸數十億金額的貨物到世界各地。
+1377. travel (v.) 旅行
+By the age of 25 he had alreay travelled to over 30 countries.
+在25歲之前，他已經旅行超過30個國家。
+1378. treason (n.) 叛國
+Selling your government's secrets is a crime known as treason.
+販賣你的國家機密被稱為叛國罪。
+1379. treasure (n.) 財寶
+The pirates hid the treasure on the small desert island.
+海盜們將寶藏藏在小島上。
+1380. treat (v.) 對待
+My wife treated me to great steak dinner.
+我太太晚上請我吃牛排大餐。
+1381. treaty (n.) 條約
+The students do not want him to sign the treaty this year.
+學生們不想要他在今年簽署該條約。
+(n.) 契約
+After careful consideration, the two directors signed the new treaty on how to exploit the area.
+在慎重的考慮後，兩位董事簽署了如何開發並利用該區域的新條約。
+1382. tree (n.) 樹木
+The tree is famous throughout the country for being the oldest in Taiwan.
+那棵樹因為是全台灣最老的樹而有名。
+1383. trial (n.) 試驗
+The trial lasted for two weeks before they reached a verdict.
+在完成裁定之前，這審判維持了兩個禮拜。
+1384. tribe (n.) 部落
+The primitive tribe had never seen a TV or modern electronic equipment.
+這個原始部落從來都沒有見過電視，或者是任何現代化的電子器材。
+1385. trick (n.) 戲法
+The magician's favorite trick involves swallowing a sword.
+那個魔術師最喜歡的戲法中包含了吞劍。
+(n.) 花招
+The oil company is known for using lots of tricks to gain access to the oil.
+那間石油公司因使用不同花招來得到石油而聞名。
+1386. trip (n.) 旅行
+After the exams we should take a trip around Taiwan.
+考試後我們應該來趟環台灣全島旅行。
+1387. troop (n.) 軍隊
+The troops marched quickly across the field on their way to take the old town.
+軍隊快速的穿越了田野要拿下那座舊城鎮。
+(n.) 一群人
+A troop of wild monkeys jumped up and down on the roof of the car.
+一群野生的猴子在車頂跳上跳下的。
+1388. trouble (n.) 麻煩
+We had a lot of trouble with our neighbors last week.
+上周與我們和鄰居間有許多的衝突。
+1389. truck (n.) 卡車
+In our country many workers like blue trucks.
+在我們國家有許多工人喜歡開藍色卡車。
+1390. true (adj.) 真實的
+Everyone says that his stories are amazing but always true.
+每個人都說他的故事都是真實而且驚人。
+1391. trust (n.) 信任
+Good business relations are built on more than trust.
+良好的業務關係是建立在信任上。
+(v.) 花招
+The government couldn't believe they trusted the man in the cheap suit and sunglasses.
+政府不能相信他們竟信任穿廉價的西裝和太陽眼鏡的人。
+1392. try (v.) 嘗試
+You should always try your best to do well at University.
+你應該要想盡辦法在大學裡好好努力。。
+1393. tube (n.) 管子
+The tube was full of a strange smelling liquid with a greenish color.
+管子裏裝滿了有著奇怪氣味的綠色液體。
+1394. turn (v.) 轉彎
+Please don't forget to turn off the lights before you leave the room.
+在你離開房間前，千萬不要忘記關燈。
+1395. twice (adv.) 兩次
+I told her twice and she still didn't make the phone call.
+我對他說了兩次，但他仍然沒有撥電話。
+(adv.) 兩倍
+He makes twice as much money as me and never seems to be busy.
+他賺的錢是我的兩倍，但他看來不是很忙。
+1396. tyre (n.) (英)輪胎
+You should always carry a spare tyre in the back of your car.
+你應該隨身攜帶備胎在汽車的後部。
+1397. under (prep.) 在.....下面
+Before Christmas parents usually put gifts under the Christmas tree.
+在聖誕節前夕父母通常把禮物放在聖誕樹下。
+1398. understand (v.) 了解
+In order to succeed you have to understand other people's opinions.
+為了取得成功，你必須了解其他人的意見。
+1399. unit (n.) 單位
+He bought a large home and converted it into several smaller units.
+他買了一間大房子，並把它分成一些小的單位。
+1400. universe (n.) 宇宙
+Do you think that humans will explore the universe in spaceships this century?
+你認為人類本世紀會成功的使用太空船探索宇宙嗎?
+1401. unless (conj.) 除非
+You'll feel awful tomorrow unless you get a good night's sleep.
+除非你今晚好好睡覺，不然明天你會覺得糟透了。
+1402. until (conj.) 直到
+Most parents let their kids stay up until midnight on New Year's Eve.
+大多數家長讓他們的孩子在除夕夜熬夜。
+1403. up (adv.) 向上
+The cat jumped up onto the trash can when the dog walked past.
+當那隻狗經過時，貓跳上垃圾桶。
+(prep.) 在......之上
+Dave lives just up the road from me.
+Dave 住在離我很近的道路上。
+1404. upon (prep.) 在.......的上面
+The school dependents upon charity donations.
+學校是依賴慈善捐款經營。
+1405. urge (v.) 力促
+The teacher urged us to prepare hard for the exam.
+老師要求我們努力準備考試。
+(n.) 強烈的慾望
+I have an urge to stuff my face with lots of pie!
+我有個想把臉埋進派裡的衝動。
+1406. us (pron.) 我們(受詞)
+We had nothing to do with it, so don't go blaming us.
+我們什麼也沒有做，所以不要去指責我們。
+1407. use (v.) 使用
+Can I use your phone to make a quick phone call?
+我可以用你的電話打個電話嗎?
+1408. valley (n.) 山谷
+There are some wonderful hidden valleys buried deep within Taiwan's mountains.
+在台灣的深山有些驚為天人的山谷隱藏其中。
+1409. value (n.) 價值
+Nature should defy being ascribed a monetary value.
+大自然應該被視為無價之寶。
+(n.) 益處
+This course in particular has been of great value to us.
+這個課程對我們有特別大的價值。
+1410. vary (v.) 改變
+His statements varied so much, it was difficult to know which one to believe.
+他的陳述改變這麼多，很難確信哪個是真的。
+1411. vegetable (n.) 蔬菜
+Fresh fruits and vegetables are essential components of a healthy diet.
+新鮮的水果和蔬菜是健康飲食最關鍵的要素。
+1412. vehicle (n.) 車輛
+There were so many vehicles on the road we fancied we'd never get there.
+路上車子那麼多，原本以為我們根本到不了目的地。
+1413. version (n.) 說法
+His version of events is a lot different to yours.
+他對事件的說法跟你的不同。
+(n.) 版本
+The newer version of the text book is far easier to read.
+課本的新版本更容易閱讀。
+1414. very (adv.) 非常地
+He really is looking very old these days.
+這幾天他真的看起來非常地老。
+1415. veto (n.) 否決權
+America used its veto to stop the Palestinian bill from passing.
+美國使用否決權來阻止巴勒斯坦法案通過。
+(v.) 否決
+The president vetoed the bill.
+總統否決該法案。
+1416. vicious (adj.) 邪惡的
+He was attacked by a vicious dog on his way to work.
+他在上班途中被一條惡狗攻擊。
+1417. victim (n.) 犧牲者
+He was the victim of an assault whilst on holiday.
+他是在假日被攻擊的犧牲者。
+(n.) 受害者
+There are now scores of victims of drone attacks in Yemen.
+現在在葉門有大量的攻擊行動下的受害者。
+1418. victory (n.) 勝利
+It was the might of the Red Army that sealed victory for the Allies in World War II.
+在第二次世界大戰中時，是紅色陸軍的力量封鎖了盟軍的勝利。
+1419. view (n.) 觀看
+Could you move to the side, please? You're obstructing my view.
+不好意思，請借過你已經妨礙到我的視線了。
+(n.) 視野
+The view from the summit was just amazing.
+眺望那座山峰的視野太驚奇了。
+1420. violence (n.) 暴力
+Violence is not allowed on campus.
+在校園裡，暴力是不被允許的。
+1421. visit (adv.) 拜訪
+I hope to visit the Arctic some day to see the Northern Lights.
+我希望能夠有機會到北極去看看極光。
+1422. voice (n.) 聲音
+They could not perform the concert as the singer had lost his voice.
+他們無法在演唱會表演因為歌手失去了聲音。
+1423. volume (n.) 體積
+He had to plough his way through a large volume of books to pass the exam.
+他因為考試能及格，其主要是每一卷的部分都非常詳細閱讀。
+(n.) 量
+The economy was crippled due to a fall in the volume of exports.
+經濟陷入癱瘓是由於出口量的下降
+(n.) 音量
+Please turn the volume of your music down so I can hear myself think.
+請你把音樂的聲音關小一點我才能安靜的思考。
+1424. vote (n.) 投票
+Every vote will count in the upcoming by-election.
+每一個投票都將會統計在即將舉行的補選中。
+(v.) 投票
+The public has such little faith in politicians that few people vote these days.
+大眾對政客不太信任所以這現在很少人去投票。
+1425. wage (n.) 薪資
+The workers complained that their wages were too low..
+工人們在抱怨他們的薪資太低。
+1426. wait (v.) 等待
+I didn't realise I'd have to wait so long for my hamburger.
+我不明白為何我的漢堡要等那麼久。
+1427. walk (v.) 走路
+He walks with a limp right now after breaking his toe.
+他的腳趾受傷後，現在只能一拐一拐的走路。
+1428. wall (n.) 牆壁
+The end of the Cold War was best symbolised by the tearing down of the Berlin Wall.
+柏林圍牆的倒榻，象徵著冷戰的結束。
+1429. want (v.) 想要
+Children have to learn that they can't have everything they want..
+孩子們要學習到他們無法為所欲為。
+1430. war (n.) 戰爭
+The politicians threatened war if their demands were not met.
+政治家威脅，如果他們的要求得不到滿足，將會發動戰爭。
+1431. warm (adj.) 溫暖
+They say it will get colder later, so make sure to wrap up warm
+待會將會變冷，所以要確保穿暖一點。
+1432. warn (v.) 警告
+The referee warned the player not to commit any more fouls.
+裁判警告球員，不要再次犯規。
+1433. wash (v.) 洗滌
+I no longer have to wash my clothes by hand after buying a washing machine.
+買洗衣機之後，我就不必再用手洗滌衣服了。
+1434. waste (v.) 浪費
+Why do we waste so much food when there are people in the third world too poor to eat?
+為什麼我們要浪費這麼多的食物，當第三世界的人窮到沒東西吃呢?
+1435. watch (v.) 觀看
+The British like to watch cricket in the summer.
+英國人喜歡在夏天時觀看板球。
+(v.) 觀察
+The police watched the suspect carefully.
+警察仔細地觀察著可疑嫌犯。
+(n.) 錶
+Dave got a new watch for his birthday.
+戴維得到了一支新手錶當作生日禮物。
+1436. water (v.) 水
+The factory dumped all its waste into the water
+工廠把所有的垃圾都倒進去水裡。
+1437. wave (v.) 招手
+The Queen waved at the crowd on her way past.
+女王在路上向人群揮手。
+(n.) 波浪
+The surfers rushed to the beach to make the most of the big waves.
+衝浪運動員衝向海灘迎向最大的浪。
+1438. way (n.) 方法
+It now seems vital we find a new way to generate energy.
+現在對我們最重要的是尋找新的方法產生能量。
+(n.) 路徑
+It took us longer than expected to get here as we went the wrong way.
+我們比預期的花了更長的時間，因為我們走錯了路。
+1439. we (pron.) 我們(主詞)
+We will face many problems in the near future due to climate change.
+由於氣候變遷，我們在不久的未來將會面對很多問題。
+1440. weak (adj.) 虛弱的
+He left work early feeling weak and wobbly.
+他很早就下班了因為感覺虛弱和不穩定。
+1441. wealth (n.) 財富
+Adam Smith's magnum opus was "The Wealth of Nations".
+亞當·斯密的代表作是“國富論”。
+1442. weapon (n.) 武器
+The inspectors spent many years fruitlessly searching for Iraq's alleged weapons.
+檢查人員花了很多年徒勞的搜尋伊拉克的可疑武器。
+1443. wear (v.) 穿
+You should really wear your best suit for the interview.
+你應該為了這個面試穿你最好的套裝。
+(v.) 戴
+As the sun was beating down heavily outside, he chose to wear a wide-brimmed hat.
+當外面的陽光直照射時，他選擇戴寬簷帽。
+1444. weather (n.) 天氣
+This weather is just horrendous: rain day in, day out!
+這樣的天氣真可怕，一整天一直下雨。
+1445. week (n.) (一)週
+He exercises at least twice a week.
+他一週至少運動兩次。
+1446. weight (v.) 秤重量
+The clerk weighed the letter at the post office counter.
+店員在郵局櫃台秤信件的重量。
+1447. welcome (v.) 歡迎
+The ambassador welcomed the dignitaries to his residence.
+大使歡迎貴賓去他家作客。
+1448. well (adv.) 好
+He has a promising career ahead of him as he speaks English well.
+他有個大好前程在等著他因為他英文講得很好。
+1449. west (n.) 西方
+The west coast of Taiwan is now largely developed.
+台灣的西岸已經被大量開發了。
+1450. wet (pron.) 濕的
+In East Asia, the wet season usually starts in late spring and continues into early autumn.
+在東亞，潮濕的季節時常起於春天尾，持續到秋天開始。
+1451. what (pron.) 什麼
+I really don't know what to have for dinner this evening!
+我真的不知道晚餐要吃什麼!
+1452. wheat (n.) 小麥
+Wheat is a great provider of fiber for the human digestive system.
+小麥是人體消化系統纖維的主要來源。
+1453. wheel (n.) 輪子
+A tricycle has three wheels.
+三輪車有三個輪子。
+1454. when (adv.) 何時
+His supporters were delighted when the results of the election were announced.
+當選舉的結果公佈時，支持他的人很高興。
+1455. where (adv.) 何地
+We haven't yet decided where we will go on vacation this summer.
+我們還沒決定這夏天要去哪裡度假。
+1456. whether (conj.) 是否
+The students wondered whether or not they should attend the demonstration.
+學生們想知道他們是否應該出席那個演講。
+1457. which (pron.) 哪(一)個
+I couldn't decide which underpants to wear this morning, so I didn't wear any!
+今天早上我無法決定要穿哪一件內褲，所以我都不穿。
+1458. while (conj.) 當.......
+Just hold on a moment while I take your details.
+稍等一下就好，我要留下你的詳細資料。
+(n.) 一會兒.
+We had to wait a while for the train, but it came eventually.
+我們等火車已經等了一會兒，它終於來了。
+1459. white (n.) 白色
+I don't like white sneakers because they make my feet look bigger.
+我不喜歡白球鞋，因為它們讓我的腳看起來更大。
+(adj.) 白色的
+White is the color of snow.
+雪的顏色是白色的。
+1460. who (pron.) 誰
+Does anyone know who this person is?
+有人知道這個人是誰嗎?
+1461. whole (adj.) 整個
+He ate a whole loaf of bread with his soup.
+他搭配湯吃了一整條麵包。
+1462. why (adv.) 為什麼
+He couldn't figure out why his car wouldn't start.
+他不明白為什麼他的車發不起來。
+1463. wide (adj.) 寬的
+The striker missed the goal by a wide margin.
+這名前鋒錯失了大空檔得分的機會。
+1464. wife (n.) 妻子
+He's such a lucky guy as his wife is really attractive.
+他多麼幸運有個非常吸引人的妻子。
+1465. wild (adj.) 狂野的
+Many people believe that wild animals should not be kept in zoos.
+許多人認為，野生動物不應該被關在動物園。
+1466. will (aux.) 將要.......
+I do hope Noam Chomsky will speak at this year's conference.
+我希望 Noam Chomsky 將會在今年的會議演說。
+1467. win (v.) 赢
+I'm hoping to win the lottery some day.
+我希望有一天能夠中樂透。
+1468. wind (n.) 風
+The wind was so strong last night that it uprooted several trees.
+風是如此強烈，以至於昨晚好幾棵樹被連根拔起。
+1469. window (n.) 窗戶
+The window blew out in the hurricane.
+颶風吹開了窗戶。
+1470. wine (n.) 酒
+After his second bottle of wine, he was in no fit state to drive home.
+喝完第二瓶酒後，他帶著不好的狀態開車回家。
+1471. wing (n.) 翅膀
+The wing of the aircraft wobbled around a bit in all the turbulence.
+飛機的機翼周圍有點搖搖晃晃的。
+1472. winter (n.) 冬天
+The temperature will drop considerably during the winter.
+氣溫將在冬季大幅下降。
+1473. wire (n.) 電線;電話線
+Electric wires now litter the rural landscape.
+電線破壞了田園的景致。
+1474. wise (adj.) 聰明的
+Socrates was arguably the wisest of the ancient philosophers.
+蘇格拉底可以說是最聰明的古代哲學家。
+1475. wish (v.) 想要
+He wouldn't tell us what he wished for after blowing out the candles on his birthday cake.
+他吹熄蠟燭之後不會告訴我們他的願望是什麼。
+1476. with (prep.) 與
+I went on vacation with my family this summer.
+我這個暑假跟我的家人一起去了夏令營。
+(prep.) 有......的
+The judges voted the girl with the red hair to be the prettiest.
+評審們一致認為有紅色頭髮的女生是最漂亮的。
+1477. withdraw (v.) 提取
+Customers queued to withdraw their money from the bank.
+顧客們在銀行排隊領他們的錢。
+(v.) 移開
+Israel has yet to withdraw from lands it occupied in 1967.
+以色列還沒從1967年被佔領的土地中撤出。
+1478. without (prep.) 沒有
+There's no smoke without fire.
+無風不起浪。
+1479. woman (n.) 女人
+She grew up to be a very elegant woman.
+她長大後成為一個很漂亮的女人。
+1480. wonder (v.) 想知道
+Climate scientists wondered how long it would take the glacier to melt.
+氣象專家想知道冰河需要花多久才會融化。
+1481. wood (n.) 木材
+Old baseball bats are made of wood rather than metal.
+舊式棒球棒是以木材製成而不是金屬。
+1482. wool (n.) 羊毛
+My skin tends to get itchy when I wear wool.
+穿上羊毛織品的衣服會讓我的皮膚很癢。
+1483. word (n.) 字
+New words are added to the dictionary every year.
+字典每一年都會增加新的單字。
+1484. work (n.) 工作
+He was so stressed out by his work that he chose to quit.
+他的工作造成他很大的壓力，因此他選擇放棄。
+1485. world (n.) 世界
+The world is a truly astonishing place filled with incredible wonder.
+這個世界確實充滿了令人難以置信的奇蹟及令人驚訝的地方。
+1486. worry (v.) 憂慮
+Climate change is worrying many scientists at the moment.
+氣候的變化在這個時刻困擾著科學們。
+1487. worse (adj.) 更差的
+After the recent economic collapse, many are praying that things do not get any worse.
+最近的經濟崩潰後，很多人都在祈禱事情不會變得更糟。
+1488. worth (n.) 價值
+This writer is widely repsected for his moral worth.
+這個作者廣受尊敬的是他的道德價值。
+(adj.) 有(.......的)價值
+The local night market is well worth a visit.
+當地的夜市是非常值得一遊。
+1489. wound (n.) 傷口
+You need to get that wound checked out by a doctor.
+你必須把傷口給醫生檢查。
+1490. wreck (n.) 失去健康的人
+He drank so much in his youth that he became a complete wreck in his middle age.
+他在年輕時喝了許多酒，以至於在中年時失去健康。
+(n.) 殘骸
+Many hobos now live in that old train wreck.
+許多流浪漢現在住在老火車殘骸裡。
+1491. write (v.) 書寫
+He wrote a great many books in his distinguished career.
+他在他傑出的職業生涯寫下了大量的書籍。
+1492. wrong (adj.) 錯誤的
+He was absolutely distraught at getting the question wrong.
+他答錯了答案一定很扼腕。
+(n.) 錯誤
+It is not always easy to know right from wrong.
+分辨對錯並不總是很容易的。
+1493. yard (n.) 一碼
+A cricket pitch is 22 yards long.
+一個板球場為 22 碼長。
+(n.) 院子
+There's so much junk in his yard, it really lowers the value of the neighborhood.
+有這麼多的垃圾在他的院子裡，果然降低了鄰里的形象。
+1494. year (n.) 年
+He is hoping for a promotion next year, but the chances seem remote.
+他希望在明年升官，但機會似乎渺茫。
+1495. yellow (n.) 黃色
+The stunning reds and yellows of autumn leaves are a real treat this time of year.
+在每年的這個時候,看到令人驚嘆的紅黃色秋葉是一種真正的享受。
+(adj.) 黃色的
+Perhaps the most famous song by the Beatles is 'Yellow Submarine'
+也許最有名的歌曲是披頭四的“黃色潛水艇”
+1496. yes (adv.) 是的
+The interviewer only asked yes or no questions, which did not allow us to explore the issue fully.
+面試官只問是或否的問題，這並沒有讓我們充分探討到問題。
+1497. yesterday (adv.) 昨天
+I had a great day yesterday.
+我昨天過了很好的一天。
+(n.) 昨天
+Yesterday was not my best day.
+我昨天真衰。
+1498. yet (adv.) 尚
+Many have yet to vote, so the issue is not decided yet.
+許多人還沒有投票，所以這個問題尚未確定。
+(adv.) 還（沒）
+I've not had lunch yet, so I'm pretty hungry.
+我還沒有吃午飯，所以我現在很餓。
+1499. you (pron.) 你
+I hope you can get all you wish for out of life.
+我希望你可以得到所有你想要的完美生活。
+1500. young (adj.) 年輕的
+Despite his age, he still looks very young.
+不提年紀,他看起來仍舊很年輕。`
+};
+
+ 
+    class App {
+        constructor() {
+            this.fullDeck = [];
+            this.studyQueue = [];
+            this.currentCard = null;
+            this.completedToday = 0;
+            this.totalToStudy = 0;
+            this.mode = 'flashcard';
+            this.autoPlay = true;
+            this.isFlipped = false;
+            this.synth = window.speechSynthesis;
+            this.quizProcessing = false;
+        }
+
+        init() {
+            lucide.createIcons();
+            this.handleSourceChange();
+        }
+
+        // --- Data ---
+        handleSourceChange() {
+            const select = document.getElementById('source-select');
+            const sourceKey = select.value;
+            const rawData = DATA_SOURCES[sourceKey] || "";
+            this.fullDeck = this.parseData(rawData);
+            
+            // 1. 更新單字總數標籤
+            const total = this.fullDeck.length;
+            const infoSpan = document.getElementById('list-info');
+            if(infoSpan) {
+                infoSpan.innerText = `共 ${total} 單字`;
+                infoSpan.classList.remove('opacity-0');
+            }
+
+            // 2. 自動填入範圍和測驗數量
+            if (total > 0) {
+                const ids = this.fullDeck.map(c => c.id);
+                document.getElementById('range-start').value = Math.min(...ids);
+                document.getElementById('range-end').value = Math.max(...ids);
+                
+                // NEW: 自動預設填入總數
+                document.getElementById('limit-count').value = total;
+            } else {
+                document.getElementById('range-start').value = '';
+                document.getElementById('range-end').value = '';
+                document.getElementById('limit-count').value = '';
+            }
+        }
+
+        parseData(text) {
+            const lines = text.trim().split('\n');
+            const list = [];
+            let item = null;
+            for (let line of lines) {
+                const titleMatch = line.match(/^(\d+)\.\s+(.+?)\s+(\(.+?\))\s+(.+)$/);
+                if (titleMatch) {
+                    if (item) list.push(item);
+                    item = {
+                        id: parseInt(titleMatch[1]),
+                        word: titleMatch[2],
+                        pos: titleMatch[3],
+                        definition: titleMatch[4],
+                        sentence: "",
+                        translation: "",
+                        interval: 0,
+                        dueDate: Date.now()
+                    };
+                } else if (item) {
+                    if (!item.sentence) item.sentence = line.trim();
+                    else if (!item.translation) item.translation = line.trim();
+                }
+            }
+            if (item) list.push(item);
+            return list;
+        }
+
+        // --- Start ---
+        start() {
+            this.initAudio();
+            const startID = parseInt(document.getElementById('range-start').value) || 0;
+            const endID = parseInt(document.getElementById('range-end').value) || 99999;
+            let limit = parseInt(document.getElementById('limit-count').value) || 0;
+
+            let filtered = this.fullDeck.filter(c => c.id >= startID && c.id <= endID);
+            
+            if (filtered.length === 0) {
+                alert("此範圍內找不到單字，請重新設定！");
+                return;
+            }
+
+            if (limit > 0 && limit < filtered.length) {
+                for (let i = filtered.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+                }
+                filtered = filtered.slice(0, limit);
+            }
+
+            this.studyQueue = filtered;
+            this.totalToStudy = this.studyQueue.length;
+            this.completedToday = 0;
+
+            document.getElementById('view-start').classList.add('hidden');
+            document.getElementById('view-main').classList.remove('hidden');
+            
+            this.speak("Start");
+            this.loadCard();
+        }
+
+        // --- Core ---
+        loadCard() {
+            if (this.studyQueue.length === 0) {
+                document.getElementById('view-main').classList.add('hidden');
+                document.getElementById('view-complete').classList.remove('hidden');
+                return;
+            }
+
+            this.currentCard = this.studyQueue[0];
+            this.isFlipped = false;
+            this.quizProcessing = false;
+            
+            document.getElementById('progress-text').innerText = `${this.completedToday} / ${this.totalToStudy}`;
+            document.getElementById('mode-flashcard').classList.add('hidden');
+            document.getElementById('mode-quiz').classList.add('hidden');
+            document.getElementById('mode-spelling').classList.add('hidden');
+
+            if (this.mode === 'flashcard') this.renderFlashcard();
+            else if (this.mode === 'quiz') this.renderQuiz();
+            else if (this.mode === 'spelling') this.renderSpelling();
+
+            lucide.createIcons();
+        }
+
+        nextCard(updatedCard = null) {
+            let newQueue = this.studyQueue.slice(1);
+            if (updatedCard && updatedCard.interval < 5) {
+                newQueue.push(updatedCard);
+            } else {
+                this.completedToday++;
+            }
+            this.studyQueue = newQueue;
+            this.loadCard();
+        }
+
+        // --- Renderers ---
+        renderFlashcard() {
+            document.getElementById('mode-flashcard').classList.remove('hidden');
+            document.getElementById('flashcard-inner').style.transform = "rotateY(0deg)";
+            document.getElementById('rating-area').classList.add('hidden');
+
+            document.getElementById('fc-word').innerText = this.currentCard.word;
+            document.getElementById('fc-pos').innerText = this.currentCard.pos;
+            document.getElementById('fc-back-word').innerText = this.currentCard.word;
+            document.getElementById('fc-def').innerText = this.currentCard.definition;
+            document.getElementById('fc-sentence').innerText = this.currentCard.sentence;
+            document.getElementById('fc-trans').innerText = this.currentCard.translation;
+        }
+
+        flipCard() {
+            if (this.isFlipped) return;
+            this.isFlipped = true;
+            document.getElementById('flashcard-inner').style.transform = "rotateY(180deg)";
+            document.getElementById('rating-area').classList.remove('hidden');
+            document.getElementById('rating-area').classList.add('fade-in');
+            if (this.autoPlay) this.speakCurrent();
+        }
+
+        renderQuiz() {
+            document.getElementById('mode-quiz').classList.remove('hidden');
+            document.getElementById('quiz-word').innerText = this.currentCard.word;
+            document.getElementById('quiz-feedback').classList.add('hidden');
+            
+            const container = document.getElementById('quiz-options');
+            container.innerHTML = '';
+
+            let distractors = this.fullDeck.filter(c => c.id !== this.currentCard.id);
+            distractors.sort(() => Math.random() - 0.5);
+            let options = [this.currentCard, ...distractors.slice(0, 3)];
+            options.sort(() => Math.random() - 0.5);
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl font-medium border-2 border-slate-100 bg-white text-slate-600 transition-all duration-300 active:scale-95";
+                btn.innerText = opt.definition;
+                btn.onclick = () => this.handleQuizAnswer(btn, opt.id);
+                container.appendChild(btn);
+            });
+        }
+
+        handleQuizAnswer(btn, id) {
+            if (this.quizProcessing) return;
+            this.quizProcessing = true;
+            
+            if (id === this.currentCard.id) {
+                this.speak('Correct');
+                btn.className = "w-full text-left p-4 rounded-xl font-bold border-2 border-green-500 bg-green-500 text-white shadow-lg";
+                setTimeout(() => this.nextCard({ ...this.currentCard, interval: 10 }), 1000);
+            } else {
+                this.speak('Incorrect');
+                btn.className = "w-full text-left p-4 rounded-xl font-medium border-2 border-red-500 bg-red-100 text-red-600";
+                const allBtns = document.getElementById('quiz-options').children;
+                for(let b of allBtns) {
+                    if(b.innerText === this.currentCard.definition) {
+                        b.className = "w-full text-left p-4 rounded-xl font-bold border-2 border-green-500 bg-green-500 text-white";
+                    }
+                }
+                setTimeout(() => this.nextCard({ ...this.currentCard, interval: 1 }), 1500);
+            }
+        }
+
+        renderSpelling() {
+            document.getElementById('mode-spelling').classList.remove('hidden');
+            document.getElementById('sp-def').innerText = this.currentCard.definition;
+            const input = document.getElementById('sp-input');
+            input.value = '';
+            input.className = "w-full text-center text-2xl font-bold border-2 border-slate-200 rounded-xl py-3 mb-4 outline-none focus:border-purple-500";
+            input.focus();
+        }
+
+        handleSpelling(e) {
+            if(e) e.preventDefault();
+            const input = document.getElementById('sp-input');
+            const val = input.value.trim().toLowerCase();
+            const target = this.currentCard.word.trim().toLowerCase();
+
+            if (val === target) {
+                this.speak('Correct');
+                input.className = "w-full text-center text-2xl font-bold border-2 border-green-500 text-green-600 rounded-xl py-3 mb-4 bg-green-50";
+                setTimeout(() => this.nextCard({ ...this.currentCard, interval: 10 }), 1000);
+            } else {
+                this.speak('Incorrect');
+                input.className = "w-full text-center text-2xl font-bold border-2 border-red-500 text-red-600 rounded-xl py-3 mb-4 bg-red-50 animate-pulse";
+            }
+            return false;
+        }
+
+        // --- Utils ---
+        initAudio() {
+            if (!this.synth) return;
+            const u = new SpeechSynthesisUtterance(""); u.volume = 0; this.synth.speak(u);
+        }
+        speak(text) {
+            if (!this.synth) return;
+            this.synth.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US'; u.rate = 0.9;
+            const vs = this.synth.getVoices();
+            const v = vs.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Samantha')));
+            if (v) u.voice = v;
+            this.synth.speak(u);
+        }
+        speakCurrent() { if(this.currentCard) this.speak(this.currentCard.word); }
+        toggleAutoPlay() {
+            this.autoPlay = !this.autoPlay;
+            const btn = document.getElementById('btn-autoplay');
+            btn.className = this.autoPlay ? "p-2 rounded-full bg-blue-100 text-blue-600" : "p-2 rounded-full bg-slate-100 text-slate-400";
+            btn.innerHTML = `<i data-lucide="${this.autoPlay ? 'volume-2' : 'volume-x'}" class="w-4 h-4"></i>`;
+            lucide.createIcons();
+        }
+        toggleSettings() { document.getElementById('settings-menu').classList.toggle('hidden'); }
+        setMode(m) {
+            this.mode = m;
+            document.getElementById('settings-menu').classList.add('hidden');
+            document.querySelectorAll('.mode-btn').forEach(b => {
+                b.className = b.dataset.mode === m ? "mode-btn p-2 rounded-lg text-xs font-bold bg-blue-600 text-white" : "mode-btn p-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-500";
+            });
+            this.loadCard();
+        }
+        rate(r) { this.nextCard({ ...this.currentCard, interval: r === 0 ? 1 : 10 }); }
+    }
+
+    var app;
+    window.onload = () => {
+        app = new App();
+        app.init();
+    };
+    </script>
+</body>
+</html>
