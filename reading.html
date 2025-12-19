@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Learning Pro - 全方位閱讀備考系統</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- 引入 Babel 用於解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+        }
+        
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        .animate-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 h-screen overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 圖標組件 (SVG) ---
+        const Icon = ({ path, className = "w-6 h-6" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            BookOpen: <Icon path={<><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></>} />,
+            Languages: <Icon path={<><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></>} />,
+            Brain: <Icon path={<><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></>} />,
+            Menu: <Icon path={<><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>} />,
+            X: <Icon path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />,
+            Settings: <Icon path={<><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>} />,
+            MousePointer2: <Icon path={<><path d="m12 6 4 13-2-1-2 4-2-4-2 1z"/></>} />,
+            Volume2: <Icon path={<><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></>} />,
+            RotateCcw: <Icon path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>} />,
+        };
+
+        // --- 資料處理與斷詞工具 ---
+        const tokenize = (text) => {
+            return text.split(/(\s+|[.,!?;:"])/).filter(Boolean);
+        };
+
+        const cleanWord = (word) => {
+            return word.replace(/[^a-zA-Z]/g, '').toLowerCase();
+        };
+
+        // --- 學習資料庫 ---
+        const studyUnits = [
+            {
+                id: 1,
+                title: "Unit 1: Share-Rent-Cars (租車廣告)",
+                category: "Advertisement",
+                segments: [
+                { en: "Discover your destination with a rental car from Share-Rent-Cars this year!", zh: "今年就用 Share-Rent-Cars 的租車服務探索您的目的地吧！" },
+                { en: "Forget the tour bus and enjoy the freedom to explore whenever you like.", zh: "忘掉遊覽車，享受隨心所欲探索的自由。" },
+                { en: "Prices start at just $35.99 per day with unlimited kilometers.", zh: "價格僅需每天 $35.99 起，且里程無限制。" },
+                { en: "Choose from economy cars to top-of-the-line models.", zh: "從經濟型轎車到頂級車款任君挑選。" },
+                { en: "Book online at www.sharerentcars.com or at any Share-Rent-Cars location.", zh: "請上網 www.sharerentcars.com 預訂，或親臨任何 Share-Rent-Cars 據點。" },
+                { en: "During May, receive a 25% off coupon valid at Tasty Restaurant locations across the state.", zh: "五月份期間，還可獲得一張全州 Tasty Restaurant 分店皆可使用的 75 折優惠券。" },
+                { en: "We accept all major credit cards.", zh: "我們接受所有主要信用卡。" },
+                { en: "Experience the convenience of Share-Rent-Cars today!", zh: "今天就來體驗 Share-Rent-Cars 的便利！" }
+                ],
+                vocabulary: [
+                { word: "destination", part: "n.", def: "目的地", sent: "We arrived at our destination on time." },
+                { word: "rent", part: "v.", def: "出租", sent: "I rented a car to explore the city." },
+                { word: "unlimited", part: "adj.", def: "不受限制的", sent: "This pass is available for one month's unlimited travel within Japan." },
+                { word: "economy", part: "n.", def: "節省; 經濟型", sent: "We always fly economy class because it is much cheaper." },
+                { word: "coupon", part: "n.", def: "優惠券", sent: "You can collect three coupons to get a 10% discount." },
+                { word: "valid", part: "adj.", def: "有效的", sent: "My passport is valid for another two years." }
+                ]
+            },
+            {
+                id: 2,
+                title: "Unit 2: Shopping Complaint (購物客訴)",
+                category: "Email",
+                segments: [
+                { en: "To whom it may concern,", zh: "敬啟者：" },
+                { en: "Two weeks ago, I ordered a \"Summer Blooms\" bouquet from your flower shop, to be delivered to my wife on her birthday, July 21st.", zh: "兩週前，我在貴店訂購了一束「夏日盛開」花束，要在 7 月 21 日我妻子的生日當天送達。" },
+                { en: "I also ordered a box of chocolates and a card.", zh: "我還訂了一盒巧克力和一張卡片。" },
+                { en: "Not only did the flowers arrive a day late, but they were in terrible condition.", zh: "花不僅晚了一天送到，而且狀況極差。" },
+                { en: "Some of the stems were broken, and most of the flowers had already started to wilt and turn brown.", zh: "有些花莖斷了，大部分的花已經開始枯萎變褐。" },
+                { en: "Furthermore, the chocolates and the card were missing entirely.", zh: "此外，巧克力和卡片完全沒送到。" },
+                { en: "This was very disappointing since I am a longtime customer of your shop and have had only good experiences until now.", zh: "這非常令人失望，因為我是貴店的長期顧客，至今為止只有過良好的體驗。" },
+                { en: "I believe I should get a full refund in the amount of $50.", zh: "我認為我應該獲得 50 美元的全額退款。" },
+                { en: "I've attached my e-mail receipt and a photograph of the flowers just after they arrived as proof of purchase.", zh: "我隨信附上了我的電子郵件收據和花剛送到時的照片作為購買證明。" },
+                { en: "Regards, Steve Smith", zh: "Steve Smith 敬上" }
+                ],
+                vocabulary: [
+                { word: "bouquet", part: "n.", def: "花束", sent: "" },
+                { word: "condition", part: "n.", def: "狀況, 狀態", sent: "" },
+                { word: "wilt", part: "v.", def: "枯萎, 凋謝", sent: "" },
+                { word: "disappointing", part: "adj.", def: "令人失望的", sent: "" },
+                { word: "refund", part: "n.", def: "退款", sent: "" },
+                { word: "receipt", part: "n.", def: "收據", sent: "" },
+                { word: "oversight", part: "n.", def: "疏忽", sent: "" },
+                { word: "redeem", part: "v.", def: "兌換, 抵消", sent: "" },
+                { word: "purchase", part: "n.", def: "購買", sent: "" },
+                { word: "sincerely", part: "adv.", def: "真誠地", sent: "" }
+                ]
+            },
+            {
+                id: 3,
+                title: "Unit 3: Role of Sports (運動的角色)",
+                category: "Article",
+                segments: [
+                { en: "Sports play a significant role in our lives, offering a multitude of benefits for individuals of all ages.", zh: "運動在我們的生活中扮演著重要的角色，為各個年齡層的人們提供許多好處。" },
+                { en: "Whether we participate in sports ourselves or enjoy watching them, they bring excitement, physical activity, and a sense of community.", zh: "無論我們是親自參與運動還是享受觀看比賽，它們都帶來興奮感、身體活動和社區歸屬感。" },
+                { en: "Firstly, sports contribute to our physical well-being.", zh: "首先，運動有助於我們的身體健康。" },
+                { en: "Engaging in regular physical activity helps improve our overall fitness.", zh: "從事規律的身體活動有助於改善我們的整體健康狀況。" },
+                { en: "Sports require movement and exertion, which strengthen muscles, enhance cardiovascular health, and increase flexibility.", zh: "運動需要活動和費力，這能增強肌肉、提升心血管健康並增加靈活性。" },
+                { en: "Moreover, sports provide an enjoyable way to stay active, helping us maintain a healthy weight and reducing the risk of chronic diseases.", zh: "此外，運動提供了一種有趣的方式來保持活躍，幫助我們維持健康的體重並降低慢性疾病的風險。" },
+                { en: "In addition to physical benefits, sports have a positive impact on our mental well-being.", zh: "除了身體上的好處，運動對我們的心理健康也有正面的影響。" },
+                { en: "Physical activity stimulates the release of endorphins, which are natural mood enhancers.", zh: "身體活動會刺激腦內啡的釋放，這是一種天然的情緒增強劑。" },
+                { en: "Participating in sports can alleviate stress, anxiety, and symptoms of depression.", zh: "參與運動可以減輕壓力、焦慮和憂鬱症狀。" },
+                { en: "So, let's embrace the power of sports and make them an integral part of our lives, reaping the numerous benefits they offer.", zh: "因此，讓我們擁抱運動的力量，使其成為我們生活中不可或缺的一部分，收穫它所提供的眾多好處。" }
+                ],
+                vocabulary: [
+                { word: "multitude", part: "n.", def: "許多", sent: "" },
+                { word: "community", part: "n.", def: "社區; 共同體", sent: "" },
+                { word: "enrich", part: "v.", def: "使豐富", sent: "" },
+                { word: "fitness", part: "n.", def: "健康 (體能)", sent: "" },
+                { word: "exertion", part: "n.", def: "努力; 費力", sent: "" },
+                { word: "enhance", part: "v.", def: "提高; 增加", sent: "" },
+                { word: "cardiovascular", part: "adj.", def: "心血管的", sent: "" },
+                { word: "chronic", part: "adj.", def: "慢性的; 長期的", sent: "" },
+                { word: "stimulate", part: "v.", def: "刺激; 促使", sent: "" },
+                { word: "alleviate", part: "v.", def: "減輕; 緩和", sent: "" },
+                { word: "foster", part: "v.", def: "培養; 促進", sent: "" },
+                { word: "resilience", part: "n.", def: "彈性; 恢復力", sent: "" },
+                { word: "integral", part: "adj.", def: "不可缺的; 整體的", sent: "" },
+                { word: "reap", part: "v.", def: "收割; 獲得", sent: "" }
+                ]
+            },
+            {
+                id: 4,
+                title: "Unit 4: Gallery Glory (畫廊展覽)",
+                category: "Event",
+                segments: [
+                { en: "ATTENTION ART LOVER", zh: "藝術愛好者請注意" },
+                { en: "Gallery Glory is opening a new exhibition this Sunday!", zh: "榮耀畫廊 (Gallery Glory) 將於本週日舉辦新展覽！" },
+                { en: "Come and witness local artist Hilda Walters' new pieces.", zh: "快來見證當地藝術家 Hilda Walters 的新作品。" },
+                { en: "Her new art will combine digital and oil pieces.", zh: "她的新藝術將結合數位和油畫作品。" },
+                { en: "Hilda will give a brief talk about her passion of art after introducing her new artwork.", zh: "Hilda 在介紹完她的新藝術品後，將簡短談論她對藝術的熱情。" },
+                { en: "She will describe her inspiration for her new pieces and answer your questions.", zh: "她將描述她新作品的靈感來源並回答您的問題。" },
+                { en: "All original artworks are available for purchase.", zh: "所有原創藝術品均可購買。" },
+                { en: "Visit our website www.galleryglory.com to view images of Hilda Walters' art and to register for your FREE TICKETS to Sunday's event.", zh: "請訪問我們的網站 www.galleryglory.com 預覽 Hilda Walters 的藝術圖片，並註冊索取本週日活動的免費門票。" }
+                ],
+                vocabulary: [
+                { word: "exhibition", part: "n.", def: "展覽", sent: "" },
+                { word: "witness", part: "v.", def: "見證", sent: "" },
+                { word: "gallery", part: "n.", def: "畫廊", sent: "" },
+                { word: "digital", part: "adj.", def: "數位的", sent: "" },
+                { word: "artwork", part: "n.", def: "藝術品", sent: "" },
+                { word: "register", part: "v.", def: "註冊", sent: "" },
+                { word: "purchase", part: "v.", def: "購買", sent: "" }
+                ]
+            },
+            {
+                id: 5,
+                title: "Unit 5: Dragon Airlines (航空公司會員)",
+                category: "Email",
+                segments: [
+                { en: "Dear Valued Customer,", zh: "親愛的尊貴客戶：" },
+                { en: "Thank you for choosing Dragon Airlines for your recent business travel.", zh: "感謝您最近的商務旅行選擇龍騰航空。" },
+                { en: "If you are a frequent flyer, we invite you to take advantage of the Dragon Airlines Membership Plan.", zh: "如果您是常客，我們誠摯邀請您使用龍騰航空會員計劃。" },
+                { en: "The program consists of two levels: basic membership and the VIP program.", zh: "該計劃包含兩個等級：基本會員和 VIP 計劃。" },
+                { en: "Basic membership allows you to earn and redeem miles with Dragon Airlines.", zh: "基本會員資格讓您可以累積和兌換龍騰航空的哩程。" },
+                { en: "As a VIP member, you will receive free first-class upgrades on Dragon Airlines flights.", zh: "作為 VIP 會員，您將獲得龍騰航空航班的免費頭等艙升等。" },
+                { en: "You will also receive preferred seating, priority check-in, and access to the pre-flight lounge.", zh: "您還將享有優先選位、優先報到以及使用貴賓室的權利。" },
+                { en: "For a limited time, we are offering 500 free miles simply for joining our basic program.", zh: "限時優惠，只要加入我們的基本計劃，即贈送 500 哩免費哩程。" }
+                ],
+                vocabulary: [
+                { word: "frequent", part: "adj.", def: "頻繁的", sent: "" },
+                { word: "membership", part: "n.", def: "會員", sent: "" },
+                { word: "earn", part: "v.", def: "賺得", sent: "" },
+                { word: "redeem", part: "v.", def: "兌換 (哩程/現金)", sent: "" },
+                { word: "upgrades", part: "n.", def: "升等", sent: "" },
+                { word: "priority", part: "n.", def: "優先", sent: "" },
+                { word: "access", part: "n.", def: "使用權; 通道", sent: "" },
+                { word: "limited", part: "adj.", def: "有限制的", sent: "" }
+                ]
+            },
+            {
+                id: 6,
+                title: "Unit 6: Raw Restaurant (餐廳介紹)",
+                category: "Review",
+                segments: [
+                { en: "Indulge in the special 9-course meal at \"Raw,\" a restaurant founded by Chef André Chiang in 2014.", zh: "盡情享受由主廚江振誠於 2014 年創立的「Raw」餐廳所提供的特製 9 道菜套餐。" },
+                { en: "Located in Taipei, Raw serves delicious Taiwanese cuisine, showcasing a blend of traditional and innovative flavors.", zh: "Raw 位於台北，供應美味的台灣料理，展現了傳統與創新口味的融合。" },
+                { en: "We're open from Wednesday to Sunday, 11:30 am to 10:00 pm.", zh: "我們的營業時間為週三至週日，上午 11:30 至晚上 10:00。" },
+                { en: "Raw offers a modern and open atmosphere with a semi-open kitchen where you can watch the chef at work.", zh: "Raw 提供現代開放的氛圍，設有半開放式廚房，您可以觀看主廚的工作過程。" },
+                { en: "Make a reservation online and join us in a relaxing atmosphere where we aim to offer creative dishes at affordable prices.", zh: "請線上預訂，在輕鬆的氛圍中加入我們，我們致力於以實惠的價格提供創意料理。" },
+                { en: "Discover the culinary wonders of Raw, where domestic and international diners alike are treated with warm hospitality.", zh: "探索 Raw 的烹飪奇蹟，無論是國內還是國際食客都能受到熱情的款待。" },
+                { en: "Don't miss out on the best of Taiwanese cuisine - visit Raw today!", zh: "不要錯過最棒的台灣料理 —— 今天就造訪 Raw！" }
+                ],
+                vocabulary: [
+                { word: "course", part: "n.", def: "菜式/菜品", sent: "" },
+                { word: "chef", part: "n.", def: "主廚", sent: "" },
+                { word: "cuisine", part: "n.", def: "烹飪風格; 料理", sent: "" },
+                { word: "flavor", part: "n.", def: "口味", sent: "" },
+                { word: "atmosphere", part: "n.", def: "氛圍", sent: "" },
+                { word: "reservation", part: "n.", def: "預訂", sent: "" },
+                { word: "dish", part: "n.", def: "菜餚", sent: "" },
+                { word: "culinary", part: "adj.", def: "烹飪的", sent: "" },
+                { word: "domestic", part: "adj.", def: "國內的", sent: "" },
+                { word: "hospitality", part: "n.", def: "款待", sent: "" }
+                ]
+            },
+            {
+                id: 7,
+                title: "Unit 7: Meeting Reminder (會議提醒)",
+                category: "Business",
+                segments: [
+                { en: "This is a reminder that the department meeting for this month will take place this Friday, at 12:10.", zh: "提醒您，本月的部門會議將於本週五 12:10 舉行。" },
+                { en: "Please notice that the location has changed. It will move to conference room 3.", zh: "請注意地點已變更，將改至 3 號會議室。" },
+                { en: "We will review the sales on the project and discuss the marketing strategies for the rest of the year.", zh: "我們將檢視專案的銷售狀況，並討論今年剩餘時間的行銷策略。" },
+                { en: "This meeting is during lunch time. Sandwiches and tea or coffee will be served.", zh: "本次會議在午餐時間進行。將供應三明治和茶或咖啡。" },
+                { en: "I hope this makes it easy for everyone to attend the meeting without worrying about lunch.", zh: "希望這能讓大家輕鬆參加會議，無需擔心午餐問題。" },
+                { en: "Your presence is important. Please let me know by Wednesday if you won't be able to make the meeting.", zh: "您的出席很重要。如果您無法參加會議，請在週三前告知我。" }
+                ],
+                vocabulary: [
+                { word: "reminder", part: "n.", def: "提醒", sent: "We received a reminder about the upcoming deadline." },
+                { word: "take place", part: "phr.", def: "舉行; 發生", sent: "The wedding ceremony will take place at the beach." },
+                { word: "review", part: "v.", def: "審查", sent: "He reviewed his options before making a final decision." },
+                { word: "marketing", part: "n.", def: "行銷", sent: "" },
+                { word: "strategy", part: "n.", def: "策略", sent: "They are working on a new strategy to attract more clients." },
+                { word: "serve", part: "v.", def: "供應", sent: "They served drinks and snacks at the event." },
+                { word: "presence", part: "n.", def: "出席", sent: "The presence of a new teacher made everyone curious." },
+                { word: "agenda", part: "n.", def: "議程", sent: "The meeting agenda includes discussions on the new project." },
+                { word: "apologize", part: "v.", def: "道歉", sent: "" },
+                { word: "absence", part: "n.", def: "缺席", sent: "The teacher explained the lesson again due to the students' absence." }
+                ]
+            },
+            {
+                id: 8,
+                title: "Unit 8: Food Safety (食安問題)",
+                category: "News",
+                segments: [
+                { en: "A worker at the \"Kebuke\" tea shop in Hsinchu, Taiwan, made people angry by spitting on her hand and mixing tapioca pearls with her bare hands after a customer placed an order before closing time.", zh: "台灣新竹「可不可」飲料店的一名員工惹怒了大眾，因為在打烊前有顧客下單，她竟然在手上吐口水，並徒手攪拌珍珠。" },
+                { en: "Someone filmed the act and shared it online.", zh: "有人拍下了這一行為並分享到網路上。" },
+                { en: "The company quickly fired the worker, closed the shop, and ended their deal with them.", zh: "公司迅速解雇了該員工，關閉了該分店，並終止了與他們的加盟合約。" },
+                { en: "The workers apologized and agreed to pay money.", zh: "涉事員工道歉並同意賠償。" },
+                { en: "The company said they will make food safety and store rules better and asked people to stop attacking the workers online.", zh: "公司表示將改善食品安全和店面規則，並呼籲大眾停止在網路上攻擊該員工。" }
+                ],
+                vocabulary: [
+                { word: "worker", part: "n.", def: "員工", sent: "The worker cleaned the tables at the restaurant." },
+                { word: "spit", part: "v.", def: "吐口水", sent: "Spitting in public is not polite." },
+                { word: "mix", part: "v.", def: "攪拌; 混合", sent: "She was mixing ingredients for the cake." },
+                { word: "tapioca", part: "n.", def: "木薯 (珍珠)", sent: "Tapioca pearls are used in bubble tea." },
+                { word: "customer", part: "n.", def: "顧客", sent: "The customer asked for a refund." },
+                { word: "fire", part: "v.", def: "解雇", sent: "He was fired from his job for being late." },
+                { word: "apologize", part: "v.", def: "道歉", sent: "She apologized for missing the meeting." },
+                { word: "safety", part: "n.", def: "安全", sent: "Safety is very important in the workplace." }
+                ]
+            },
+            {
+                id: 9,
+                title: "Unit 9: Jason's Father (傑森的父親)",
+                category: "Story",
+                segments: [
+                { en: "Jason is writing to Ruby about his father.", zh: "Jason 正在寫信給 Ruby 談論他的父親。" },
+                { en: "Jason says that his father is a workaholic.", zh: "Jason 說他的父親是個工作狂。" },
+                { en: "He usually works long hours.", zh: "他通常工作很長時間。" },
+                { en: "Sometimes, he has so much work to do that he even brings it back home with him.", zh: "有時候，他的工作太多，甚至會帶回家做。" },
+                { en: "Weekends mean nothing to him.", zh: "週末對他來說沒有意義（意指週末也在工作）。" },
+                { en: "So, every week, he doesn't have much free time left.", zh: "所以，每週他都沒剩下多少空閒時間。" },
+                { en: "He loves to make new friends when he does have the time, though.", zh: "不過，當他有時間的時候，他喜歡結交新朋友。" },
+                { en: "He's always going to different places.", zh: "他總是去不同的地方。" },
+                { en: "However, Jason thinks that his father doesn't spend enough time with the family.", zh: "然而，Jason 認為父親花在家庭上的時間不夠。" },
+                { en: "It makes him feel distant from him.", zh: "這讓他覺得與父親很疏遠。" },
+                { en: "He wishes his father would stay at home more often.", zh: "他希望父親能多待在家裡。" }
+                ],
+                vocabulary: [
+                { word: "workaholic", part: "n.", def: "工作狂", sent: "Annie is a workaholic." },
+                { word: "bring", part: "v.", def: "帶來", sent: "She always brings her dog to work." },
+                { word: "nothing", part: "n.", def: "微不足道的事", sent: "Money means nothing to Joe." },
+                { word: "spend", part: "v.", def: "花費", sent: "She spends most of her free time reading." },
+                { word: "distant", part: "adj.", def: "疏遠的; 遙遠的", sent: "He's always very distant with John." },
+                { word: "stay", part: "v.", def: "停留; 待在", sent: "Can you stay here?" }
+                ]
+            },
+            {
+                id: 10,
+                title: "Unit 10: Delivery Person (外送員)",
+                category: "Story",
+                segments: [
+                { en: "There is more food delivery now, and we see many delivery people on the road.", zh: "現在外送食物越來越多，我們在路上常看到許多外送員。" },
+                { en: "It is convenient when we don't want to go out; we can use an App to order food.", zh: "當我們不想出門時，這很方便；我們可以用 App 點餐。" },
+                { en: "However, it's not an easy job.", zh: "然而，這並不是一份輕鬆的工作。" },
+                { en: "Delivery people must deliver on time, or customers may get mad and leave bad comments.", zh: "外送員必須準時送達，否則顧客可能會生氣並留下負評。" },
+                { en: "Then, the boss would deduct their pay.", zh: "然後，老闆就會扣他們的薪水。" },
+                { en: "Three months ago, I became one of them.", zh: "三個月前，我成為了其中一員。" },
+                { en: "One rainy day, we had many orders, and it took longer to deliver.", zh: "在一個下雨天，我們有很多訂單，送餐花了更長的時間。" },
+                { en: "Some customers got angry because we were late, but it wasn't our fault.", zh: "有些顧客因為我們遲到而生氣，但這不是我們的錯。" },
+                { en: "To avoid being late, we ride fast, and some of us have accidents.", zh: "為了避免遲到，我們騎得很快，有些人因此發生了意外。" },
+                { en: "No one wants to get bad comments.", zh: "沒人想要得到負評。" },
+                { en: "If people were friendlier, maybe there would be fewer accidents.", zh: "如果人們能更友善一點，也許意外就會少一些。" },
+                { en: "Many customers don't understand it's a tough job and they only care about their food.", zh: "許多顧客不了解這是一份艱苦的工作，他們只在乎他們的食物。" }
+                ],
+                vocabulary: [
+                { word: "delivery", part: "n.", def: "遞送", sent: "We offer free delivery on orders over $100." },
+                { word: "convenient", part: "adj.", def: "方便的", sent: "It is very convenient to take public transportation." },
+                { word: "comment", part: "n.", def: "評論", sent: "You're welcome to leave a comment on our website." },
+                { word: "deduct", part: "v.", def: "扣除", sent: "Five points will be deducted for a wrong answer." },
+                { word: "accident", part: "n.", def: "意外", sent: "Jake had a car accident." },
+                { word: "tough", part: "adj.", def: "困難的", sent: "We have to make some tough decisions." }
+                ]
+            }
+        ];
+
+        // --- 單字提示框元件 ---
+        const WordTooltip = ({ vocab, onClose, position }) => (
+            <div 
+                className="absolute z-50 bg-slate-900 text-white p-4 rounded-xl shadow-xl w-64 border border-slate-700 animate-in"
+                style={{ top: position.top, left: position.left }}
+            >
+                <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-lg capitalize text-blue-300">{vocab.word}</h4>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white">
+                        {Icons.X}
+                    </button>
+                </div>
+                <div className="flex gap-2 items-center mb-2">
+                    <span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300 font-mono">{vocab.part}</span>
+                    <span className="text-md font-medium">{vocab.def}</span>
+                </div>
+                {vocab.sent && (
+                    <p className="text-xs text-slate-400 italic border-l-2 border-slate-600 pl-2 mt-2">"{vocab.sent}"</p>
+                )}
+                <div className="absolute -bottom-2 left-4 w-4 h-4 bg-slate-900 border-r border-b border-slate-700 transform rotate-45"></div>
+            </div>
+        );
+
+        // --- 閱讀器元件 ---
+        const TextReader = ({ unit, settings }) => {
+            const [activeWord, setActiveWord] = useState(null);
+            const [expandedSentences, setExpandedSentences] = useState({});
+
+            const handleWordClick = (e, word) => {
+                e.stopPropagation();
+                const clean = cleanWord(word);
+                const found = unit.vocabulary.find(v => cleanWord(v.word) === clean);
+                
+                if (found) {
+                    const rect = e.target.getBoundingClientRect();
+                    setActiveWord({
+                        vocab: found,
+                        position: {
+                            top: rect.top - 140,
+                            left: Math.max(10, rect.left - 80)
+                        }
+                    });
+                } else {
+                    setActiveWord(null);
+                }
+            };
+
+            const toggleSentence = (index) => {
+                setExpandedSentences(prev => ({
+                    ...prev,
+                    [index]: !prev[index]
+                }));
+            };
+
+            useEffect(() => {
+                const closeTooltip = () => setActiveWord(null);
+                window.addEventListener('click', closeTooltip);
+                return () => window.removeEventListener('click', closeTooltip);
+            }, []);
+
+            return (
+                <div className="relative">
+                    {activeWord && (
+                        <div className="fixed inset-0 z-40" onClick={() => setActiveWord(null)}>
+                            <WordTooltip 
+                                {...activeWord} 
+                                onClose={() => setActiveWord(null)} 
+                            />
+                        </div>
+                    )}
+
+                    <div className="space-y-6">
+                        {unit.segments.map((seg, idx) => (
+                            <div 
+                                key={idx} 
+                                className={`transition-all duration-300 rounded-lg p-2 -mx-2 ${expandedSentences[idx] ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                            >
+                                {settings.mode === 'interlinear' && (
+                                    <div className="text-sm text-slate-500 mb-1 font-medium select-none px-1">
+                                        {seg.zh}
+                                    </div>
+                                )}
+
+                                <div 
+                                    className="text-xl text-slate-800 leading-loose cursor-pointer"
+                                    onClick={() => settings.mode !== 'interlinear' && toggleSentence(idx)}
+                                >
+                                    {tokenize(seg.en).map((token, tIdx) => {
+                                        const isWord = /^[a-zA-Z]/.test(token);
+                                        const isVocab = isWord && unit.vocabulary.some(v => cleanWord(v.word) === cleanWord(token));
+                                        
+                                        return (
+                                            <span 
+                                                key={tIdx}
+                                                onClick={(e) => isWord ? handleWordClick(e, token) : null}
+                                                className={`
+                                                    inline-block rounded px-0.5 transition-colors duration-200
+                                                    ${isVocab ? 'text-blue-600 font-semibold border-b-2 border-blue-200 hover:bg-blue-100 cursor-pointer' : ''}
+                                                    ${!isVocab && isWord ? 'hover:text-blue-500 cursor-pointer' : ''}
+                                                `}
+                                            >
+                                                {token}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+
+                                {settings.mode === 'interactive' && expandedSentences[idx] && (
+                                    <div className="mt-2 text-md text-slate-600 bg-white p-3 rounded border border-blue-100 shadow-sm animate-in">
+                                        <span className="text-blue-400 mr-2 text-xs uppercase tracking-wider font-bold">Translation</span>
+                                        {seg.zh}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 主應用程式 ---
+        function App() {
+            const [currentUnitId, setCurrentUnitId] = useState(1);
+            const [activeTab, setActiveTab] = useState('read'); 
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+            const [settings, setSettings] = useState({
+                mode: 'interlinear',
+            });
+
+            const [quizState, setQuizState] = useState({
+                currentQ: 0,
+                score: 0,
+                showResult: false,
+                options: [],
+                selected: null
+            });
+
+            const currentUnit = studyUnits.find(u => u.id === currentUnitId);
+
+            useEffect(() => {
+                if (activeTab === 'quiz') resetQuiz();
+            }, [activeTab, currentUnitId]);
+
+            const resetQuiz = () => {
+                setQuizState({ currentQ: 0, score: 0, showResult: false, options: [], selected: null });
+                generateQuestion(0);
+            };
+
+            const generateQuestion = (index) => {
+                if (!currentUnit?.vocabulary?.length) return;
+                if (index >= currentUnit.vocabulary.length) {
+                    setQuizState(prev => ({ ...prev, showResult: true }));
+                    return;
+                }
+                const correct = currentUnit.vocabulary[index];
+                const others = studyUnits.flatMap(u => u.vocabulary).filter(v => v.word !== correct.word).sort(() => 0.5 - Math.random()).slice(0, 3);
+                setQuizState(prev => ({ 
+                    ...prev, 
+                    options: [correct, ...others].sort(() => 0.5 - Math.random()),
+                    selected: null 
+                }));
+            };
+
+            const handleQuizAnswer = (option) => {
+                if (quizState.selected) return;
+                const correct = currentUnit.vocabulary[quizState.currentQ];
+                const isCorrect = option.word === correct.word;
+                
+                setQuizState(prev => ({ ...prev, selected: option, score: isCorrect ? prev.score + 1 : prev.score }));
+
+                setTimeout(() => {
+                    const nextQ = quizState.currentQ + 1;
+                    setQuizState(prev => ({ ...prev, currentQ: nextQ }));
+                    generateQuestion(nextQ);
+                }, 1200);
+            };
+
+            return (
+                <div className="flex h-screen bg-slate-100 overflow-hidden font-sans text-slate-900">
+                    
+                    {/* Sidebar */}
+                    <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 flex flex-col`}>
+                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800">
+                                {Icons.BookOpen}
+                                閱讀特訓
+                            </h2>
+                            <button onClick={() => setMobileMenuOpen(false)} className="md:hidden p-1 rounded hover:bg-slate-200">
+                                {Icons.X}
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                            {studyUnits.map((unit) => (
+                                <button
+                                    key={unit.id}
+                                    onClick={() => { setCurrentUnitId(unit.id); setActiveTab('read'); setMobileMenuOpen(false); }}
+                                    className={`w-full text-left p-3 rounded-lg transition-all group ${currentUnitId === unit.id ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'hover:bg-slate-100 text-slate-600'}`}
+                                >
+                                    <div className={`text-xs uppercase tracking-wider mb-1 font-semibold ${currentUnitId === unit.id ? 'text-blue-200' : 'text-slate-400 group-hover:text-slate-500'}`}>{unit.category}</div>
+                                    <div className="font-medium truncate text-sm">{unit.title}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 flex flex-col w-full h-full relative">
+                        
+                        {/* Top Navigation */}
+                        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-30">
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                                    {Icons.Menu}
+                                </button>
+                                <h1 className="text-lg font-bold text-slate-800 hidden sm:block truncate max-w-md">{currentUnit?.title}</h1>
+                            </div>
+                            
+                            <div className="flex bg-slate-100 p-1 rounded-lg">
+                                {[
+                                    { id: 'read', icon: Icons.BookOpen, label: '閱讀' },
+                                    { id: 'vocab', icon: Icons.Languages, label: '單字' },
+                                    { id: 'quiz', icon: Icons.Brain, label: '測驗' }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        <div className="w-4 h-4">{tab.icon}</div>
+                                        <span className="hidden sm:inline">{tab.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </header>
+
+                        {/* Content Area */}
+                        <main className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+                            
+                            {/* READING MODE */}
+                            {activeTab === 'read' && (
+                                <div className="max-w-3xl mx-auto">
+                                    
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                                            {Icons.Settings}
+                                            <span>顯示模式：</span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => setSettings({ mode: 'interlinear' })}
+                                                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${settings.mode === 'interlinear' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex flex-col leading-none text-[10px] items-center gap-0.5">
+                                                        <span>中</span>
+                                                        <span>En</span>
+                                                    </div>
+                                                    對照翻譯
+                                                </div>
+                                            </button>
+                                            <button 
+                                                onClick={() => setSettings({ mode: 'interactive' })}
+                                                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${settings.mode === 'interactive' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    {Icons.MousePointer2}
+                                                    點擊翻譯
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white p-6 md:p-10 rounded-2xl shadow-sm border border-slate-200 min-h-[60vh]">
+                                        <TextReader unit={currentUnit} settings={settings} />
+                                    </div>
+                                    
+                                    <div className="mt-8 text-center text-slate-400 text-sm">
+                                        提示：點擊<span className="text-blue-500 font-bold mx-1">藍色單字</span>可查看詳細定義
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* VOCAB MODE */}
+                            {activeTab === 'vocab' && (
+                                <div className="max-w-4xl mx-auto grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {currentUnit?.vocabulary.map((vocab, idx) => (
+                                        <div key={idx} className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-all hover:-translate-y-1 group">
+                                            <div className="flex justify-between items-start mb-3">
+                                                <h3 className="text-xl font-bold text-slate-800">{vocab.word}</h3>
+                                                <span className="text-xs font-mono bg-blue-50 text-blue-600 px-2 py-1 rounded-full border border-blue-100">{vocab.part}</span>
+                                            </div>
+                                            <p className="text-lg text-slate-700 mb-4 font-medium border-l-4 border-blue-500 pl-3 bg-slate-50 py-2 rounded-r">{vocab.def}</p>
+                                            {vocab.sent && (
+                                                <div className="text-sm text-slate-500 italic bg-slate-50 p-3 rounded-lg flex gap-2">
+                                                    <div className="w-4 h-4 shrink-0 text-slate-400 mt-0.5">{Icons.Volume2}</div>
+                                                    "{vocab.sent}"
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* QUIZ MODE */}
+                            {activeTab === 'quiz' && (
+                                <div className="max-w-2xl mx-auto flex flex-col justify-center h-full min-h-[60vh]">
+                                    {!quizState.showResult ? (
+                                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 relative overflow-hidden">
+                                            <div className="absolute top-0 left-0 w-full h-1 bg-slate-100">
+                                                <div 
+                                                    className="h-full bg-blue-500 transition-all duration-300"
+                                                    style={{ width: `${((quizState.currentQ) / currentUnit.vocabulary.length) * 100}%` }}
+                                                />
+                                            </div>
+                                            
+                                            <div className="text-center mb-10 mt-4">
+                                                <span className="text-xs font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-wider">
+                                                    Question {quizState.currentQ + 1} of {currentUnit.vocabulary.length}
+                                                </span>
+                                                <h3 className="text-4xl font-bold text-slate-800 mt-6 mb-2">{currentUnit?.vocabulary[quizState.currentQ]?.word}</h3>
+                                                <p className="text-slate-400">What is the meaning?</p>
+                                            </div>
+
+                                            <div className="grid gap-3">
+                                                {quizState.options.map((opt, idx) => {
+                                                    const isCorrect = currentUnit.vocabulary[quizState.currentQ].word === opt.word;
+                                                    const isSelected = quizState.selected === opt;
+                                                    
+                                                    let style = "bg-white hover:bg-slate-50 border-slate-200 text-slate-700";
+                                                    if (quizState.selected) {
+                                                        if (isCorrect) style = "bg-green-50 border-green-500 text-green-700 ring-1 ring-green-500";
+                                                        else if (isSelected) style = "bg-red-50 border-red-500 text-red-700";
+                                                        else style = "opacity-50 border-slate-200";
+                                                    }
+
+                                                    return (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => handleQuizAnswer(opt)}
+                                                            disabled={!!quizState.selected}
+                                                            className={`w-full p-4 rounded-xl border-2 text-left transition-all text-lg font-medium flex justify-between items-center ${style}`}
+                                                        >
+                                                            {opt.def}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-12 text-center">
+                                            <div className="inline-flex p-6 rounded-full bg-yellow-50 text-yellow-500 mb-6 ring-8 ring-yellow-50/50">
+                                                <div className="w-16 h-16">{Icons.Brain}</div>
+                                            </div>
+                                            <h3 className="text-3xl font-bold text-slate-800 mb-2">Quiz Completed!</h3>
+                                            <p className="text-xl text-slate-600 mb-8">
+                                                You scored <span className="font-bold text-blue-600 text-2xl">{quizState.score}</span> out of {currentUnit.vocabulary.length}
+                                            </p>
+                                            <button 
+                                                onClick={resetQuiz}
+                                                className="bg-slate-900 text-white px-8 py-3 rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200 font-medium flex items-center gap-2 mx-auto"
+                                            >
+                                                {Icons.RotateCcw}
+                                                Try Again
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
