@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>華語聽力測驗 · 對話生成器 v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F0EBE0;
+      --paper: #FAF7F0;
+      --ink: #2A2520;
+      --ink-soft: #5C5247;
+      --accent: #8B5A3C;
+      --accent-dark: #5B3E2B;
+      --sage: #7A8B5C;
+      --rose: #B07560;
+      --plum: #6B4866;
+      --line: #C9BFA8;
+      --highlight: #E8DFC8;
+      --shadow: rgba(60, 40, 20, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      min-height: 100vh;
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(168, 149, 110, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 10%, rgba(139, 90, 60, 0.06) 0%, transparent 50%);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header::before {
+      content: '— 教學工具 · TEACHING TOOL · v2 —';
+      display: block;
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--sage);
+      letter-spacing: 0.3em;
+      font-size: 0.78rem;
+      margin-bottom: 0.8rem;
+    }
+
+    h1 {
+      font-family: 'Noto Serif TC', serif;
+      font-weight: 500;
+      font-size: clamp(1.9rem, 5vw, 2.8rem);
+      letter-spacing: 0.05em;
+      color: var(--accent-dark);
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      font-size: 1.05rem;
+      color: var(--ink-soft);
+      letter-spacing: 0.05em;
+      margin-top: 0.3rem;
+    }
+
+    .divider {
+      width: 60px;
+      height: 1px;
+      background: var(--accent);
+      margin: 1.2rem auto;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 1.8rem 1.6rem;
+      margin-bottom: 1.3rem;
+      box-shadow: 0 2px 20px var(--shadow);
+      position: relative;
+    }
+
+    .card-label {
+      position: absolute;
+      top: -10px;
+      left: 22px;
+      background: var(--paper);
+      padding: 0 12px;
+      font-family: 'Noto Serif TC', serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .card-num {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--sage);
+      margin-right: 0.4rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.2rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 800px) {
+      .grid-3 {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+        gap: 1.2rem;
+      }
+
+      .container {
+        padding: 1.5rem 1rem 3rem;
+      }
+
+      .card {
+        padding: 1.6rem 1.1rem;
+      }
+    }
+
+    .voice-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      padding: 0.9rem;
+      background: var(--bg);
+      border-radius: 2px;
+      border: 1px solid var(--line);
+    }
+
+    .voice-block.A {
+      border-left: 3px solid var(--accent);
+    }
+
+    .voice-block.B {
+      border-left: 3px solid var(--sage);
+    }
+
+    .voice-block.N {
+      border-left: 3px solid var(--plum);
+    }
+
+    .voice-block>label.role {
+      font-family: 'Noto Serif TC', serif;
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .role-tag {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 22px;
+      color: var(--paper);
+      font-family: 'EB Garamond', serif;
+      font-weight: 500;
+      font-size: 0.85rem;
+    }
+
+    .voice-block.A .role-tag {
+      background: var(--accent);
+    }
+
+    .voice-block.B .role-tag {
+      background: var(--sage);
+    }
+
+    .voice-block.N .role-tag {
+      background: var(--plum);
+    }
+
+    .role-desc {
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+    }
+
+    select {
+      font-family: inherit;
+      font-size: 0.88rem;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 0.55rem 0.7rem;
+      color: var(--ink);
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%238B5A3C' stroke-width='1.5' fill='none'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 0.7rem center;
+      padding-right: 2rem;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .pitch-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+    }
+
+    .pitch-row label {
+      white-space: nowrap;
+      min-width: 2.5em;
+    }
+
+    .pitch-row .val {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--accent);
+      min-width: 2.8em;
+      text-align: right;
+    }
+
+    .pitch-row input[type="range"] {
+      flex: 1;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      background: var(--line);
+      cursor: pointer;
+      border-radius: 2px;
+      width: 100%;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid var(--paper);
+      box-shadow: 0 1px 3px var(--shadow);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid var(--paper);
+    }
+
+    .test-btn {
+      font-size: 0.78rem;
+      color: var(--accent);
+      background: transparent;
+      border: 1px dashed var(--accent);
+      padding: 0.35rem 0.7rem;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+      align-self: flex-start;
+      font-family: inherit;
+    }
+
+    .test-btn:hover {
+      background: var(--accent);
+      color: var(--paper);
+    }
+
+    .range-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .range-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+    }
+
+    .range-label .val {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--accent);
+      font-size: 1.05rem;
+    }
+
+    textarea {
+      font-family: 'Noto Sans TC', monospace;
+      font-size: 0.95rem;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 0.9rem 1rem;
+      color: var(--ink);
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      line-height: 1.85;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .input-help {
+      margin-top: 0.7rem;
+      font-size: 0.83rem;
+      color: var(--ink-soft);
+      line-height: 1.7;
+    }
+
+    .input-help code {
+      font-family: 'EB Garamond', 'Noto Sans TC', serif;
+      font-style: italic;
+      color: var(--accent);
+      background: var(--highlight);
+      padding: 0 0.35em;
+      border-radius: 2px;
+      font-size: 0.92em;
+    }
+
+    .input-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .mini-btn {
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+      background: transparent;
+      border: 1px solid var(--line);
+      padding: 0.35rem 0.75rem;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .mini-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 1.8rem;
+    }
+
+    button.action {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      padding: 0.8rem 1.6rem;
+      border: 1px solid var(--accent);
+      background: var(--paper);
+      color: var(--accent-dark);
+      cursor: pointer;
+      transition: all 0.25s;
+      border-radius: 2px;
+    }
+
+    button.action:hover:not(:disabled) {
+      background: var(--accent);
+      color: var(--paper);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    button.action.primary {
+      background: var(--accent);
+      color: var(--paper);
+    }
+
+    button.action.primary:hover:not(:disabled) {
+      background: var(--accent-dark);
+    }
+
+    button.action:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 1.2rem;
+      padding: 0.9rem 1.1rem;
+      background: var(--highlight);
+      border-left: 3px solid var(--sage);
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+      display: none;
+      line-height: 1.6;
+    }
+
+    .status.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .status.error {
+      border-left-color: var(--rose);
+      background: #F4E4DD;
+      color: var(--accent-dark);
+    }
+
+    .status.success {
+      border-left-color: var(--sage);
+      background: #E8EFE2;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .progress-card {
+      margin-top: 1.2rem;
+      padding: 1.3rem 1.4rem;
+      background: var(--paper);
+      border: 1px solid var(--accent);
+      border-radius: 2px;
+      display: none;
+      box-shadow: 0 2px 16px var(--shadow);
+    }
+
+    .progress-card.show {
+      display: block;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.7rem;
+      font-size: 0.88rem;
+    }
+
+    .progress-info .label {
+      font-family: 'Noto Serif TC', serif;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .progress-info .time {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .progress-bar {
+      height: 5px;
+      background: var(--highlight);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 0.9rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--sage));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .now-playing {
+      padding-top: 0.8rem;
+      border-top: 1px dashed var(--line);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.92rem;
+      min-height: 1.5em;
+    }
+
+    .np-tag {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      font-weight: 500;
+      flex-shrink: 0;
+      padding: 0.05em 0.45em;
+      border-radius: 2px;
+      font-size: 0.82rem;
+    }
+
+    .np-tag.A {
+      background: rgba(139, 90, 60, 0.15);
+      color: var(--accent);
+    }
+
+    .np-tag.B {
+      background: rgba(122, 139, 92, 0.15);
+      color: var(--sage);
+    }
+
+    .np-tag.N {
+      background: rgba(107, 72, 102, 0.15);
+      color: var(--plum);
+    }
+
+    .np-text {
+      font-family: 'Noto Serif TC', serif;
+      color: var(--ink);
+      line-height: 1.6;
+    }
+
+    .voice-warning {
+      margin-top: 1rem;
+      padding: 0.8rem 1rem;
+      background: #FFF4E0;
+      border-left: 3px solid var(--accent);
+      font-size: 0.85rem;
+      color: var(--accent-dark);
+      display: none;
+      line-height: 1.6;
+    }
+
+    .voice-warning.show {
+      display: block;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+      color: var(--ink-soft);
+      margin-top: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-row input {
+      cursor: pointer;
+    }
+
+    .ornament {
+      text-align: center;
+      color: var(--sage);
+      font-size: 1rem;
+      margin: 2.5rem 0 1rem;
+      letter-spacing: 1em;
+    }
+
+    footer {
+      text-align: center;
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--ink-soft);
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      padding-bottom: 1rem;
+    }
+
+    /* ============ Record Guide Modal ============ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(42, 37, 32, 0.65);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 9000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-box {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 2rem 2.2rem;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 12px 50px rgba(42, 37, 32, 0.3);
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-title {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: var(--accent-dark);
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.05em;
+    }
+
+    .modal-subtitle {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-divider {
+      width: 40px;
+      height: 1px;
+      background: var(--accent);
+      margin: 0.8rem 0 1.4rem;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .step {
+      display: flex;
+      gap: 0.9rem;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--paper);
+      font-family: 'EB Garamond', serif;
+      font-weight: 500;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.1rem;
+    }
+
+    .step-content {
+      flex: 1;
+      font-size: 0.88rem;
+      color: var(--ink);
+      line-height: 1.65;
+    }
+
+    .step-content strong {
+      color: var(--accent-dark);
+    }
+
+    .step-content em {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      color: var(--ink-soft);
+    }
+
+    /* browser dialog simulation */
+    .bsim {
+      margin-top: 0.65rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #f4f4f4;
+      overflow: hidden;
+      font-family: -apple-system, 'Segoe UI', sans-serif;
+      font-size: 0.78rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    .bsim-bar {
+      background: #e4e4e4;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      color: #444;
+      border-bottom: 1px solid #ccc;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .bsim-tabs {
+      display: flex;
+      gap: 3px;
+      padding: 5px 8px 0;
+      background: #e8e8e8;
+    }
+
+    .bsim-tab {
+      padding: 4px 10px;
+      border-radius: 4px 4px 0 0;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      font-size: 0.72rem;
+      color: #666;
+      cursor: default;
+    }
+
+    .bsim-tab.active {
+      background: #fff;
+      color: #111;
+      font-weight: 600;
+    }
+
+    .bsim-body {
+      background: #fff;
+      padding: 9px 11px;
+    }
+
+    .bsim-pick {
+      font-size: 0.72rem;
+      color: #555;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .bsim-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 7px;
+      border-radius: 4px;
+      border: 2px solid transparent;
+    }
+
+    .bsim-item.hi {
+      border-color: #4a90d9;
+      background: rgba(74, 144, 217, 0.08);
+    }
+
+    .bsim-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .bsim-name {
+      font-size: 0.72rem;
+      color: #333;
+    }
+
+    .bsim-audio {
+      margin-top: 7px;
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      padding: 6px 8px;
+      background: #fff8e1;
+      border: 2px solid #f5a623;
+      border-radius: 4px;
+      animation: pulseGold 2s infinite;
+    }
+
+    @keyframes pulseGold {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(245, 166, 35, 0.45);
+      }
+
+      50% {
+        box-shadow: 0 0 0 5px rgba(245, 166, 35, 0);
+      }
+    }
+
+    .bsim-check {
+      flex-shrink: 0;
+      margin-top: 2px;
+      width: 13px;
+      height: 13px;
+      border-radius: 2px;
+      background: #f5a623;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .bsim-audio-text .t1 {
+      font-size: 0.74rem;
+      color: #7a4a00;
+      font-weight: 700;
+    }
+
+    .bsim-audio-text .t2 {
+      font-size: 0.67rem;
+      color: #999;
+      margin-top: 1px;
+    }
+
+    /* verify bar */
+    .verify-bar {
+      padding: 0.7rem 0.9rem;
+      border-radius: 2px;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .verify-bar.show {
+      display: block;
+    }
+
+    .verify-bar.checking {
+      background: var(--highlight);
+      border-left: 3px solid var(--accent);
+      color: var(--ink-soft);
+    }
+
+    .verify-bar.ok {
+      background: #e8efe2;
+      border-left: 3px solid var(--sage);
+      color: #2a4a20;
+    }
+
+    .verify-bar.warn {
+      background: #f4e4dd;
+      border-left: 3px solid var(--rose);
+      color: var(--accent-dark);
+    }
+
+    /* modal actions */
+    .modal-actions {
+      display: flex;
+      gap: 0.7rem;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+
+    .modal-actions button {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 0.88rem;
+      letter-spacing: 0.05em;
+      padding: 0.6rem 1.3rem;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mbtn-cancel {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--ink-soft);
+    }
+
+    .mbtn-cancel:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .mbtn-start {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: var(--paper);
+    }
+
+    .mbtn-start:hover:not(:disabled) {
+      background: var(--accent-dark);
+    }
+
+    .mbtn-start:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>華語聽力測驗</h1>
+      <p class="subtitle">Mandarin Listening Comprehension Generator</p>
+      <div class="divider"></div>
+    </header>
+
+    <!-- Voice settings -->
+    <div class="card">
+      <span class="card-label"><span class="card-num">i.</span>三角色聲音設定</span>
+      <div class="grid-3">
+        <div class="voice-block A">
+          <label class="role"><span class="role-tag">A</span>角色 A <span class="role-desc">女 / 甲</span></label>
+          <select id="voiceA"></select>
+          <div class="pitch-row">
+            <label>音調</label>
+            <input type="range" id="pitchA" min="0.5" max="1.5" step="0.05" value="1.0">
+            <span class="val" id="pitchAval">1.00</span>
+          </div>
+          <button class="test-btn" data-target="A">▶ 試聽 A</button>
+        </div>
+        <div class="voice-block B">
+          <label class="role"><span class="role-tag">B</span>角色 B <span class="role-desc">男 / 乙</span></label>
+          <select id="voiceB"></select>
+          <div class="pitch-row">
+            <label>音調</label>
+            <input type="range" id="pitchB" min="0.5" max="1.5" step="0.05" value="0.7">
+            <span class="val" id="pitchBval">0.70</span>
+          </div>
+          <button class="test-btn" data-target="B">▶ 試聽 B</button>
+        </div>
+        <div class="voice-block N">
+          <label class="role"><span class="role-tag">旁</span>旁白 <span class="role-desc">題目 + 選項</span></label>
+          <select id="voiceN"></select>
+          <div class="pitch-row">
+            <label>音調</label>
+            <input type="range" id="pitchN" min="0.5" max="1.5" step="0.05" value="0.95">
+            <span class="val" id="pitchNval">0.95</span>
+          </div>
+          <button class="test-btn" data-target="N">▶ 試聽旁白</button>
+        </div>
+      </div>
+      <div class="voice-warning" id="voiceWarning"></div>
+    </div>
+
+    <!-- Playback params -->
+    <div class="card">
+      <span class="card-label"><span class="card-num">ii.</span>播放與錄製參數</span>
+      <div class="grid-3">
+        <div class="range-block">
+          <div class="range-label"><span>語速 / Rate</span><span class="val" id="rateValue">1.00×</span></div>
+          <input type="range" id="rate" min="0.5" max="1.5" step="0.05" value="1.0">
+        </div>
+        <div class="range-block">
+          <div class="range-label"><span>句間停頓 / Pause</span><span class="val" id="pauseValue">600ms</span></div>
+          <input type="range" id="pause" min="0" max="2000" step="100" value="600">
+        </div>
+        <div class="range-block">
+          <div class="range-label"><span>題間停頓 / Q-Gap</span><span class="val" id="qPauseValue">3.0s</span></div>
+          <input type="range" id="qPause" min="1" max="8" step="0.5" value="3">
+        </div>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="fastRecord">
+        <span>下載時啟用「快速錄製」（×1.5 加速錄製，下載完的音檔時長縮短 ~33%）</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="readQuestionNum" checked>
+        <span>朗讀題號（如「第一題」）</span>
+      </label>
+    </div>
+
+    <!-- Input -->
+    <div class="card">
+      <span class="card-label"><span class="card-num">iii.</span>聽力測驗內容</span>
+      <textarea id="dialogueInput"
+        placeholder="第一題：&#10;女：你好嗎？&#10;男：我很好。&#10;問：誰問候誰？&#10;（A）...&#10;（B）..."></textarea>
+      <div class="input-help">
+        支援格式：<code>第X題：</code>、<code>女:/男:/A:/B:/甲:/乙:</code>、<code>問:</code>、<code>（A）（B）（C）（D）</code>。<br>
+        同一行有多個角色或選項都會自動拆解。標點 + 空白會被視為分隔。
+      </div>
+      <div class="input-actions">
+        <button class="mini-btn" id="loadSampleBtn">↻ 載入 10 題範例</button>
+        <button class="mini-btn" id="clearBtn">✕ 清空</button>
+        <button class="mini-btn" id="parseTestBtn">⚙ 預覽解析結果</button>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="actions">
+      <button class="action primary" id="playBtn">▶ 播放預覽</button>
+      <button class="action" id="stopBtn" disabled>■ 停止</button>
+      <button class="action" id="downloadBtn">⬇ 下載音檔</button>
+      <button class="action" id="exportTextBtn">⬇ 匯出文稿</button>
+    </div>
+    
+    <div id="audioPlayerContainer" style="display: none; margin-top: 1.5rem; text-align: center; background: var(--paper); padding: 1.5rem; border: 1px solid var(--accent); border-radius: 2px;">
+      <div style="font-family: 'Noto Serif TC', serif; font-size: 1.1rem; margin-bottom: 0.8rem; color: var(--accent-dark);">🎧 音檔生成完畢：</div>
+      <audio id="finalAudio" controls style="width: 100%; max-width: 600px; outline: none; margin-bottom: 1rem;"></audio>
+      <div>
+        <button class="action primary" id="saveFileBtn">💾 儲存為 WAV 音檔</button>
+      </div>
+    </div>
+    
+    <div class="voice-warning" id="browserWarn" style="margin-top:0.8rem;"></div>
+
+    <div class="status" id="status"></div>
+
+    <!-- Progress -->
+    <div class="progress-card" id="progressCard">
+      <div class="progress-info">
+        <span class="label" id="progressLabel">準備中...</span>
+        <span class="time" id="progressTime">--:-- / --:--</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="now-playing">
+        <span class="np-tag" id="npTag"></span>
+        <span class="np-text" id="npText"></span>
+      </div>
+    </div>
+
+    <div class="ornament">· · ·</div>
+    <footer>為華語教學設計 · Made for Mandarin teachers</footer>
+  </div>
+
+  <!-- Record Guide Modal -->
+  <div class="modal-overlay" id="recordModal">
+    <div class="modal-box">
+      <div class="modal-title">錄製設定指引</div>
+      <div class="modal-subtitle">Audio Capture Setup · 請依步驟操作，避免錄到無聲檔案</div>
+      <div id="modalBrowserNote"
+        style="display:none;margin-bottom:1rem;padding:0.7rem 0.9rem;background:#fff8e1;border-left:3px solid #f5a623;border-radius:2px;font-size:0.83rem;color:#7a4a00;line-height:1.6;">
+      </div>
+      <div class="modal-divider"></div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">點「開始錄製」後，瀏覽器會彈出「選擇要分享的內容」對話框。</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <strong>選擇「Chrome 分頁」或「Edge 分頁」</strong>（非「視窗」或「整個螢幕」），並點選本頁分頁。
+            <div class="bsim">
+              <div class="bsim-bar">選擇要分享的內容 · Choose what to share</div>
+              <div class="bsim-tabs">
+                <div class="bsim-tab">整個螢幕</div>
+                <div class="bsim-tab">視窗</div>
+                <div class="bsim-tab active">Chrome 分頁 ✓</div>
+              </div>
+              <div class="bsim-body">
+                <div class="bsim-pick">選擇一個分頁：</div>
+                <div class="bsim-item hi">
+                  <div class="bsim-icon"></div>
+                  <div class="bsim-name">華語聽力測驗 · 對話生成器 v2 &nbsp;← 點選此分頁</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <strong>務必勾選「分享分頁音訊 / Share tab audio」</strong>——此步驟最容易遺漏，未勾選將導致無聲！
+            <div class="bsim">
+              <div class="bsim-body">
+                <div class="bsim-audio">
+                  <div class="bsim-check">✓</div>
+                  <div class="bsim-audio-text">
+                    <div class="t1">分享分頁音訊 &nbsp;/&nbsp; Share tab audio</div>
+                    <div class="t2">← 必須勾選，否則音檔將無聲</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            點「分享」後系統自動朗讀錄音，完成後音檔自動下載。<br>
+            <em>錄製期間請勿切換分頁或播放其他聲音。</em>
+          </div>
+        </div>
+      </div>
+      <div class="verify-bar" id="verifyBar"></div>
+      <div class="modal-actions">
+        <button class="mbtn-cancel" id="modalCancelBtn">取消</button>
+        <button class="mbtn-start" id="modalStartBtn">開始錄製 →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let allVoices = [];
+    let zhVoices = [];
+    let isPlaying = false;
+    let isRecording = false;
+
+    // ============ Voice loading ============
+    function loadVoices() {
+      allVoices = speechSynthesis.getVoices();
+      zhVoices = allVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('zh'));
+
+      zhVoices.sort((a, b) => {
+        const score = v => {
+          const lang = v.lang.toLowerCase();
+          if (lang === 'zh-tw' || lang.startsWith('zh-hant')) return 0;
+          if (lang === 'zh-hk') return 2;
+          if (lang === 'zh-cn' || lang.startsWith('zh-hans')) return 3;
+          return 4;
+        };
+        return score(a) - score(b);
+      });
+
+      ['voiceA', 'voiceB', 'voiceN'].forEach(id => {
+        const sel = $(id);
+        const prev = sel.value;
+        sel.innerHTML = '';
+        if (zhVoices.length === 0) {
+          const o = document.createElement('option');
+          o.textContent = '（找不到中文聲音）';
+          sel.appendChild(o);
+        } else {
+          zhVoices.forEach((v, i) => {
+            const o = document.createElement('option');
+            o.value = i;
+            const tag = (v.lang.toLowerCase().startsWith('zh-tw') || v.lang.toLowerCase().startsWith('zh-hant')) ? '🇹🇼' :
+              v.lang.toLowerCase() === 'zh-hk' ? '🇭🇰' : '🌏';
+            o.textContent = `${tag} ${v.name} · ${v.lang}`;
+            sel.appendChild(o);
+          });
+          if (prev) sel.value = prev;
+        }
+      });
+
+      // Auto-pick gender
+      const female = ['female', '女', 'mei', 'hsiao', 'yating', 'ting-ting', 'tracy', 'sin-ji', 'yaoyao', 'hsiaochen', 'hsiaoyu', 'ling', 'tian'];
+      const male = ['male', '男', 'yun', 'hanhan', 'zhiwei', 'yunjhe', 'kangkang', 'liang', 'changhe', 'wenjie'];
+
+      const findIdx = (keys, exclude = -1) => {
+        for (let i = 0; i < zhVoices.length; i++) {
+          if (i === exclude) continue;
+          const name = zhVoices[i].name.toLowerCase();
+          if (keys.some(k => name.includes(k.toLowerCase()))) return i;
+        }
+        return -1;
+      };
+
+      const fIdx = findIdx(female);
+      const mIdx = findIdx(male, fIdx);
+
+      if (fIdx >= 0) $('voiceA').value = fIdx;
+      if (mIdx >= 0) $('voiceB').value = mIdx;
+      else if (zhVoices.length > 1) $('voiceB').value = (fIdx + 1) % zhVoices.length;
+      // Narrator: use a different one if possible
+      if (zhVoices.length >= 3) {
+        for (let i = 0; i < zhVoices.length; i++) {
+          if (i !== fIdx && i !== mIdx) { $('voiceN').value = i; break; }
+        }
+      } else {
+        $('voiceN').value = fIdx >= 0 ? fIdx : 0;
+      }
+
+      // Warning
+      const warn = $('voiceWarning');
+      const hasTW = zhVoices.some(v => v.lang.toLowerCase().startsWith('zh-tw') || v.lang.toLowerCase().startsWith('zh-hant'));
+      const hasMale = mIdx >= 0;
+
+      let msg = '';
+      if (zhVoices.length === 0) {
+        msg = '⚠ 系統未偵測到任何中文聲音。請改用 Chrome 或 Edge 桌面版。';
+      } else if (!hasTW && !hasMale) {
+        msg = '⚠ 未偵測到台灣繁中聲音與男聲。建議用 <strong>Microsoft Edge 桌面版</strong> 取得 HsiaoChen（女）+ YunJhe（男）。也可把角色 B 的「音調」降到 0.7 來模擬男聲。';
+      } else if (!hasTW) {
+        msg = '⚠ 未偵測到台灣繁中聲音 (zh-TW)。建議用 <strong>Microsoft Edge</strong> 取得 HsiaoChen / YunJhe。';
+      } else if (!hasMale) {
+        msg = '⚠ 系統沒有男聲，已將角色 B 預設音調設為 0.7（女聲降調模擬男聲）。如需真男聲，建議用 <strong>Microsoft Edge</strong>。';
+      }
+
+      if (msg) {
+        warn.innerHTML = msg;
+        warn.classList.add('show');
+      } else {
+        warn.classList.remove('show');
+      }
+    }
+
+    speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+    setTimeout(loadVoices, 100);
+    setTimeout(loadVoices, 500);
+
+    // ============ Range value display ============
+    ['rate', 'pitchA', 'pitchB', 'pitchN'].forEach(id => {
+      $(id).oninput = e => $(id + 'Value' in window ? id + 'Value' : id + 'val').textContent = parseFloat(e.target.value).toFixed(2) + (id === 'rate' ? '×' : '');
+    });
+    $('rate').oninput = e => $('rateValue').textContent = parseFloat(e.target.value).toFixed(2) + '×';
+    $('pitchA').oninput = e => $('pitchAval').textContent = parseFloat(e.target.value).toFixed(2);
+    $('pitchB').oninput = e => $('pitchBval').textContent = parseFloat(e.target.value).toFixed(2);
+    $('pitchN').oninput = e => $('pitchNval').textContent = parseFloat(e.target.value).toFixed(2);
+    $('pause').oninput = e => $('pauseValue').textContent = e.target.value + 'ms';
+    $('qPause').oninput = e => $('qPauseValue').textContent = parseFloat(e.target.value).toFixed(1) + 's';
+
+    // ============ Status ============
+    function showStatus(msg, type = 'info') {
+      const el = $('status');
+      el.innerHTML = msg;
+      el.className = 'status show' + (type !== 'info' ? ' ' + type : '');
+    }
+    function hideStatus() { $('status').className = 'status'; }
+
+    // ============ Parser ============
+    function preprocessText(text) {
+      text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+      // Insert newline before "第X題" if mid-line
+      text = text.replace(/([^\n])\s+(第[一二三四五六七八九十百\d]+題)/g, '$1\n$2');
+
+      // Insert newline before speaker markers when mid-line
+      // After punctuation or whitespace, before 女/男/A/B/甲/乙/Female/Male
+      text = text.replace(/([。！？!?\.])\s*((?:女|男|[ABab]|甲|乙|Female|Male)\s*[：:])/g, '$1\n$2');
+      text = text.replace(/([^\n])\s+((?:女|男|[ABab]|甲|乙|Female|Male)\s*[：:])/g, '$1\n$2');
+
+      // Insert newline before 問:
+      text = text.replace(/([^\n])\s+(問\s*[：:])/g, '$1\n$2');
+      text = text.replace(/([。！？!?\.])\s*(問\s*[：:])/g, '$1\n$2');
+
+      // Insert newline before option markers (A)(B)(C)(D)
+      text = text.replace(/([^\n])\s+([（(]\s*[A-Da-d１２３４]\s*[）)])/g, '$1\n$2');
+      text = text.replace(/([。！？!?\.])\s*([（(]\s*[A-Da-d１２３４]\s*[）)])/g, '$1\n$2');
+
+      return text;
+    }
+
+    function parseInput(rawText) {
+      const text = preprocessText(rawText);
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+      const items = [];
+      let questionStarted = false;
+      let lastWasOption = false;
+
+      for (const line of lines) {
+        // Skip metadata
+        if (/^(聽力測驗|聽力測試|聽力|測驗練習)$/.test(line)) continue;
+
+        // 第X題：
+        let m = line.match(/^第([一二三四五六七八九十百\d]+)題[：:]?\s*(.*)$/);
+        if (m) {
+          if (questionStarted) {
+            items.push({ type: 'question-gap' });
+          }
+          items.push({ type: 'question-num', num: m[1], text: '第' + m[1] + '題' });
+          questionStarted = true;
+          lastWasOption = false;
+          continue;
+        }
+
+        // Speaker A: 女/A/甲/Female
+        m = line.match(/^(女|[Aa]|甲|Female)\s*[：:]\s*(.+)$/);
+        if (m) {
+          items.push({ type: 'speech', speaker: 'A', text: m[2].trim() });
+          lastWasOption = false;
+          continue;
+        }
+
+        // Speaker B: 男/B/乙/Male
+        m = line.match(/^(男|[Bb]|乙|Male)\s*[：:]\s*(.+)$/);
+        if (m) {
+          items.push({ type: 'speech', speaker: 'B', text: m[2].trim() });
+          lastWasOption = false;
+          continue;
+        }
+
+        // 問：
+        m = line.match(/^問\s*[：:]\s*(.+)$/);
+        if (m) {
+          items.push({ type: 'pause-before-question' });
+          items.push({ type: 'question', text: m[1].trim() });
+          lastWasOption = false;
+          continue;
+        }
+
+        // Option (A) ...
+        m = line.match(/^[（(]\s*([A-Da-d])\s*[）)]\s*(.+)$/);
+        if (m) {
+          if (!lastWasOption) items.push({ type: 'pause-before-options' });
+          items.push({ type: 'option', label: m[1].toUpperCase(), text: m[2].trim() });
+          lastWasOption = true;
+          continue;
+        }
+
+        // Otherwise: ignore
+      }
+
+      return items;
+    }
+
+    // ============ Time estimation ============
+    function estimateDuration(items, rate, pauseMs, qPauseSec) {
+      let sec = 0;
+      for (const it of items) {
+        if (it.type === 'speech' || it.type === 'question' || it.type === 'option' || it.type === 'question-num') {
+          const charLen = (it.text || '').length;
+          sec += (charLen * 0.22) / rate + pauseMs / 1000;
+        } else if (it.type === 'question-gap') {
+          sec += qPauseSec;
+        } else if (it.type === 'pause-before-question') {
+          sec += 1.0;
+        } else if (it.type === 'pause-before-options') {
+          sec += 0.6;
+        }
+      }
+      return sec;
+    }
+
+    function formatTime(sec) {
+      if (!isFinite(sec) || sec < 0) sec = 0;
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // ============ Now playing UI ============
+    function updateNowPlaying(role, text) {
+      $('npTag').textContent = role === 'A' ? 'A' : role === 'B' ? 'B' : '旁';
+      $('npTag').className = 'np-tag ' + role;
+      $('npText').textContent = text;
+    }
+
+    // ============ Speak primitive ============
+    function speakOne(text, voice, rate, pitch) {
+      return new Promise((resolve) => {
+        const u = new SpeechSynthesisUtterance(text);
+        u.voice = voice;
+        u.lang = voice ? voice.lang : 'zh-TW';
+        u.rate = Math.max(0.1, Math.min(10, rate));
+        u.pitch = Math.max(0, Math.min(2, pitch));
+        u.onend = resolve;
+        u.onerror = resolve;
+        speechSynthesis.speak(u);
+      });
+    }
+
+    function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // ============ Play sequence ============
+    async function playSequence(items, opts = {}) {
+      isPlaying = true;
+      $('playBtn').disabled = true;
+      $('stopBtn').disabled = false;
+      $('downloadBtn').disabled = true;
+      $('progressCard').classList.add('show');
+
+      const baseRate = parseFloat($('rate').value);
+      const recordMultiplier = (opts.fastRecord ? 1.5 : 1.0);
+      const rate = baseRate * recordMultiplier;
+      const pauseMs = parseInt($('pause').value) / recordMultiplier;
+      const qPauseSec = parseFloat($('qPause').value) / recordMultiplier;
+      const readQNum = $('readQuestionNum').checked;
+
+      const vA = zhVoices[$('voiceA').value] || null;
+      const vB = zhVoices[$('voiceB').value] || null;
+      const vN = zhVoices[$('voiceN').value] || null;
+      const pA = parseFloat($('pitchA').value);
+      const pB = parseFloat($('pitchB').value);
+      const pN = parseFloat($('pitchN').value);
+
+      const totalEst = estimateDuration(items, rate, pauseMs, qPauseSec);
+      const startTime = Date.now();
+
+      // Count speech items for progress
+      const totalSteps = items.filter(i =>
+        i.type === 'speech' || i.type === 'question' || i.type === 'option' || i.type === 'question-num'
+      ).length;
+      let stepCount = 0;
+
+      // Find current question for progress label
+      const totalQuestions = items.filter(i => i.type === 'question-num').length;
+      let currentQ = 0;
+
+      function updateProgress(currentItemText) {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const pct = totalSteps > 0 ? Math.min(100, (stepCount / totalSteps) * 100) : 0;
+        $('progressFill').style.width = pct + '%';
+        const remaining = Math.max(0, totalEst - elapsed);
+        const label = totalQuestions > 0
+          ? `第 ${currentQ}/${totalQuestions} 題 · ${stepCount}/${totalSteps} 句`
+          : `${stepCount}/${totalSteps} 句`;
+        $('progressLabel').textContent = label;
+        $('progressTime').textContent = `${formatTime(elapsed)} / ${formatTime(totalEst)}`;
+      }
+
+      for (const item of items) {
+        if (!isPlaying) break;
+
+        if (item.type === 'question-num') {
+          currentQ++;
+          if (readQNum) {
+            updateNowPlaying('N', item.text);
+            stepCount++;
+            updateProgress();
+            await speakOne(item.text + '。', vN, rate, pN);
+            if (!isPlaying) break;
+            await delay(pauseMs * 1.5);
+          } else {
+            currentQ++;
+          }
+          continue;
+        }
+
+        if (item.type === 'speech') {
+          updateNowPlaying(item.speaker, item.text);
+          stepCount++;
+          updateProgress();
+          const voice = item.speaker === 'A' ? vA : vB;
+          const pitch = item.speaker === 'A' ? pA : pB;
+          await speakOne(item.text, voice, rate, pitch);
+          if (!isPlaying) break;
+          await delay(pauseMs);
+          continue;
+        }
+
+        if (item.type === 'pause-before-question') {
+          await delay(1000 / recordMultiplier);
+          continue;
+        }
+
+        if (item.type === 'question') {
+          updateNowPlaying('N', '問：' + item.text);
+          stepCount++;
+          updateProgress();
+          await speakOne('問。' + item.text, vN, rate, pN);
+          if (!isPlaying) break;
+          await delay(pauseMs);
+          continue;
+        }
+
+        if (item.type === 'pause-before-options') {
+          await delay(600 / recordMultiplier);
+          continue;
+        }
+
+        if (item.type === 'option') {
+          updateNowPlaying('N', `（${item.label}）${item.text}`);
+          stepCount++;
+          updateProgress();
+          await speakOne(`${item.label}。${item.text}`, vN, rate, pN);
+          if (!isPlaying) break;
+          await delay(pauseMs * 0.8);
+          continue;
+        }
+
+        if (item.type === 'question-gap') {
+          $('npText').textContent = '（題目間停頓）';
+          $('npTag').textContent = '⏸';
+          $('npTag').className = 'np-tag';
+          await delay(qPauseSec * 1000);
+          continue;
+        }
+      }
+
+      isPlaying = false;
+      $('playBtn').disabled = false;
+      $('stopBtn').disabled = true;
+      $('downloadBtn').disabled = false;
+      if (!isRecording) {
+        setTimeout(() => $('progressCard').classList.remove('show'), 1500);
+      }
+    }
+
+    function stopAll() {
+      isPlaying = false;
+      speechSynthesis.cancel();
+      $('playBtn').disabled = false;
+      $('stopBtn').disabled = true;
+      $('downloadBtn').disabled = false;
+      $('progressCard').classList.remove('show');
+    }
+
+    // ============ Buttons ============
+    $('playBtn').onclick = async () => {
+      hideStatus();
+      const text = $('dialogueInput').value.trim();
+      if (!text) return showStatus('請先輸入對話內容。', 'error');
+      const items = parseInput(text);
+      const validCount = items.filter(i => i.type === 'speech' || i.type === 'question' || i.type === 'option').length;
+      if (validCount === 0) return showStatus('未偵測到有效對話。請確認格式。', 'error');
+      showStatus(`開始播放：${items.filter(i => i.type === 'question-num').length} 題 · ${validCount} 句`, 'success');
+      await playSequence(items, { fastRecord: false });
+      if (!isPlaying) showStatus('✓ 播放完畢', 'success');
+    };
+
+    $('stopBtn').onclick = stopAll;
+
+    document.querySelectorAll('.test-btn').forEach(btn => {
+      btn.onclick = async () => {
+        if (isPlaying) return;
+        const target = btn.dataset.target;
+        const voice = zhVoices[$('voice' + target).value];
+        if (!voice) return showStatus('請先選擇聲音。', 'error');
+        const pitch = parseFloat($('pitch' + target).value);
+        const samples = {
+          'A': '你好，這是角色 A 的聲音示範。',
+          'B': '你好，這是角色 B 的聲音示範。',
+          'N': '問：關於這位先生，下面哪一個是對的？'
+        };
+        const role = target;
+        updateNowPlaying(role, samples[target]);
+        $('progressCard').classList.add('show');
+        await speakOne(samples[target], voice, parseFloat($('rate').value), pitch);
+        setTimeout(() => $('progressCard').classList.remove('show'), 800);
+      };
+    });
+
+    // ============ Sample / clear / preview ============
+    const SAMPLE_TEXT = `聽力測驗
+
+第一題：
+女：方先生，你的中文句子說得真好，聽起來像台灣人一樣！
+男：哪裡哪裡，我還是覺得自己說得不夠流利。
+女：你太客氣了，大家都很喜歡聽你說話。
+男：謝謝妳，我會繼續努力練習的。
+問：關於這位先生，下面哪一個是對的？
+（A）他覺得自己的中文已經很完美了
+（B）他不想再繼續學習華語了
+（C）他覺得自己說得還不夠好
+（D）他不喜歡別人稱讚他
+
+第二題：
+男：這家的雞湯看起來非常好喝。
+女：是啊，可是桌上只有筷子，沒有湯匙，沒辦法喝湯。
+男：沒關係，我現在去替大家拿幾個湯匙和刀叉過來。
+女：太好了，麻煩你了！
+問：這位先生現在打算要做什麼？
+（A）去點一碗雞湯
+（B）去拿一些餐具
+（C）去幫大家付錢
+（D）去洗乾淨筷子
+
+第三題：
+女：錢先生，你想吃什麼？這家餐廳的魚跟牛肉都很有名。
+男：我的中文不好，這份菜單我看不懂，請妳替我點菜吧！
+女：沒問題，那我就點一條魚、一份牛肉和一盤青菜。
+男：太謝謝妳了，我只要不辣的都可以。
+問：這位先生為什麼請小姐點菜？
+（A）他不喜歡吃這家餐廳的魚
+（B）他已經吃飽了，不想點菜
+（C）他看不懂菜單上的內容
+（D）他不想自己付餐點的錢
+
+第四題：
+男：阿強，你手上拿著什麼？
+女：我剛寫好一封信，打算寄給我在家鄉的父母。
+男：哇！這封信寫了這麼多頁，你一定寫很久吧。
+女：我寫了幾句想念他們的話，也告訴他們我在台灣過得很好。
+問：這封信是寫給誰的？
+（A）阿強的朋友
+（B）阿強的父母
+（C）阿強的老師
+（D）阿強的同事
+
+第五題：
+男：妳看起來很累，臉色不太好，是不是生病了？
+女：我感冒了，喉嚨很不舒服。
+男：醫生說感冒要多喝水、多休息，妳要不要喝點熱雞湯？
+女：好，那麻煩你替我點一碗熱熱的雞湯，謝謝。
+問：這位先生給了小姐什麼建議？
+（A）去外面的公園運動
+（B）去幫謝小姐買水果
+（C）多休息並且喝點雞湯
+（D）幫他寫一封信給老師
+
+第六題：
+女：這雙鞋子要三千塊，怎麼這麼貴啊！
+男：雖然貴，但是穿起來非常舒服，對運動很有用。
+女：我還是覺得太貴了，我想買便宜一點的。
+男：那妳再去別家店看看吧。
+問：這位小姐為什麼不想買這雙鞋？
+（A）因為鞋子的大小不合適
+（B）因為她不喜歡運動
+（C）因為價格超出了她的預算
+（D）因為鞋子的顏色不好看
+
+第七題：
+男：謝小姐，這些水果紅紅的，看起來非常好吃。
+女：這是我自己在陽台種的，送給你，請大家一起吃。
+男：謝謝妳，這看起來比商店賣的還要新鮮。
+女：哪裡哪裡，希望你們會喜歡。
+問：關於這些水果，下面哪一個是對的？
+（A）是小姐在超市買的
+（B）是先生送給小姐的
+（C）是小姐親自種出來的
+（D）是商店免費送給大家的
+
+第八題：
+女：方先生，你有看到我放在桌上的那張紙嗎？
+男：抱歉，我以為那是垃圾，剛才就把它給丟進垃圾桶了。
+女：哎呀！那上面寫著錢先生的電話號碼，很重要。
+男：對不起，我現在就去垃圾桶把它找出來。
+問：這位先生剛才對那張紙做了什麼？
+（A）把它交給錢先生了
+（B）不小心把它丟掉了
+（C）把它藏在自己的口袋裡
+（D）拿去寫新的句子了
+
+第九題：
+女：阿強，你為什麼每天都花這麼多時間練習寫漢字？
+男：雖然練習寫字很辛苦，但我覺得學會漢字對了解台灣文化非常有意義。
+女：老師也說你寫的字非常漂亮。
+男：哪裡哪裡，我還是要多練習。
+問：這位先生為什麼要練習寫漢字？
+（A）因為他覺得漢字很簡單
+（B）因為他想當中文老師
+（C）因為他覺得漢字對學習文化有用
+（D）因為他每天都覺得很無聊
+
+第十題：
+男：妳剛才買的水果呢？怎麼不見了？
+女：我剛才把它放在你的大袋子裡了，你沒發現嗎？
+男：喔！我的袋子太重了，所以我沒感覺到。
+女：沒關係，我們回家以後再拿出來吃。
+問：小姐把水果放到哪裡去了？
+（A）放在餐桌的盤子裡
+（B）放在商店的椅子上
+（C）放在先生攜帶的袋子裡
+（D）放在小姐自己的書包裡`;
+
+    $('loadSampleBtn').onclick = () => {
+      $('dialogueInput').value = SAMPLE_TEXT;
+      showStatus('已載入 10 題範例', 'success');
+    };
+
+    $('clearBtn').onclick = () => {
+      if (confirm('確定清空所有內容？')) {
+        $('dialogueInput').value = '';
+        hideStatus();
+      }
+    };
+
+    $('parseTestBtn').onclick = () => {
+      const items = parseInput($('dialogueInput').value);
+      const qCount = items.filter(i => i.type === 'question-num').length;
+      const sCount = items.filter(i => i.type === 'speech').length;
+      const qstnCount = items.filter(i => i.type === 'question').length;
+      const optCount = items.filter(i => i.type === 'option').length;
+      const rate = parseFloat($('rate').value);
+      const pauseMs = parseInt($('pause').value);
+      const qPauseSec = parseFloat($('qPause').value);
+      const dur = estimateDuration(items, rate, pauseMs, qPauseSec);
+      const fastDur = estimateDuration(items, rate * 1.5, pauseMs / 1.5, qPauseSec / 1.5);
+      showStatus(
+        `解析結果：${qCount} 題 · ${sCount} 句對話 · ${qstnCount} 個提問 · ${optCount} 個選項<br>` +
+        `預估播放時長：<strong>${formatTime(dur)}</strong> · 快速錄製模式：<strong>${formatTime(fastDur)}</strong>`,
+        'success'
+      );
+    };
+
+    // ============ Export text ============
+    $('exportTextBtn').onclick = () => {
+      const text = $('dialogueInput').value.trim();
+      if (!text) return showStatus('請先輸入內容。', 'error');
+      const date = new Date().toISOString().slice(0, 10);
+      const blob = new Blob([`華語聽力測驗 · ${date}\n\n${text}\n`], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `華語聽力_文稿_${date}.txt`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showStatus('✓ 文稿已下載', 'success');
+    };
+
+    // ============ Browser detection ============
+    (function () {
+      const isEdge = /Edg\//.test(navigator.userAgent);
+      const isChrome = /Chrome\//.test(navigator.userAgent) && !isEdge;
+      const isFile = location.protocol === 'file:';
+      const warn = $('browserWarn');
+      const modalNote = $('modalBrowserNote');
+      let warnMsg = '';
+      let noteMsg = '';
+      if (isChrome) {
+        warnMsg = '⚠ 偵測到 <strong>Chrome</strong>：Chrome 的語音合成走系統音訊管道，<strong>getDisplayMedia 無法錄到語音</strong>。下載音檔功能請改用 <strong>Microsoft Edge</strong> 桌面版。';
+        noteMsg = '⚠ Chrome 使用者注意：Chrome 的 SpeechSynthesis 音訊不屬於 Tab 音訊流，tab 分享錄製無法捕獲。<br>請使用 <strong>Microsoft Edge</strong> 瀏覽器開啟此頁面再進行錄製。';
+      } else if (isFile && !isEdge) {
+        warnMsg = '⚠ 以 <code>file://</code> 本地開啟時建議使用 <strong>Microsoft Edge</strong>，以確保分頁音訊能正確錄製。';
+        noteMsg = '提醒：以本地檔案開啟時，建議使用 Edge 瀏覽器以確保錄音正確。';
+      }
+      if (warnMsg) {
+        warn.innerHTML = warnMsg;
+        warn.classList.add('show');
+      }
+      if (noteMsg) {
+        modalNote.innerHTML = noteMsg;
+        modalNote.style.display = 'block';
+      }
+    })();
+
+    // ============ Record Guide Modal ============
+    function showRecordModal() {
+      return new Promise((resolve) => {
+        const overlay = $('recordModal');
+        const verifyBar = $('verifyBar');
+        verifyBar.className = 'verify-bar';
+        overlay.classList.add('show');
+        const cleanup = (result) => {
+          overlay.classList.remove('show');
+          resolve(result);
+        };
+        $('modalCancelBtn').onclick = () => cleanup(false);
+        $('modalStartBtn').onclick = () => cleanup(true);
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+      });
+    }
+
+    // ============ Audio level check ============
+    async function checkAudioLevel(audioStream) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return true;
+        const ctx = new AudioCtx();
+        const src = ctx.createMediaStreamSource(audioStream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        src.connect(analyser);
+        // speak a short test phrase to produce audio
+        const vN = zhVoices[$('voiceN').value] || null;
+        await speakOne('測試', vN, 1.2, 1.0);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        let maxAvg = 0;
+        const deadline = Date.now() + 1800;
+        while (Date.now() < deadline) {
+          analyser.getByteFrequencyData(data);
+          const avg = data.reduce((a, b) => a + b, 0) / data.length;
+          if (avg > maxAvg) maxAvg = avg;
+          await delay(30);
+        }
+        try { src.disconnect(); ctx.close(); } catch (_) { }
+        return maxAvg > 1.5;
+      } catch (_) {
+        return true; // if check fails, assume ok
+      }
+    }
+
+    // ============ TTS Server helpers ============
+    const TTS_SERVER = 'http://localhost:8080';
+    let ttsServerAvailable = null;
+
+    async function checkTTSServer() {
+      if (ttsServerAvailable !== null) return ttsServerAvailable;
+      try {
+        const r = await fetch(TTS_SERVER + '/ping', { signal: AbortSignal.timeout(800) });
+        ttsServerAvailable = r.ok;
+      } catch (_) { ttsServerAvailable = false; }
+      return ttsServerAvailable;
+    }
+
+    // 根據網頁上的聲音選擇，對應到 edge-tts 的神經語音
+    function getEdgeVoiceName(selectId, defaultVoice) {
+      const voice = zhVoices[$(selectId).value];
+      if (!voice) return defaultVoice;
+      const n = voice.name.toLowerCase();
+      // Female
+      if (n.includes('hsiaochen') || n.includes('曉臻') || n.includes('yating')) return 'zh-TW-HsiaoChenNeural';
+      if (n.includes('hsiaoyu') || n.includes('曉悠') || n.includes('yaoyao') || n.includes('ting-ting')) return 'zh-TW-HsiaoYuNeural';
+      if (n.includes('xiaoxiao') || n.includes('曉曉') || n.includes('mei') || n.includes('tracy') || n.includes('female')) return 'zh-CN-XiaoxiaoNeural';
+      // Male
+      if (n.includes('yunjhe') || n.includes('雲哲')) return 'zh-TW-YunJheNeural';
+      if (n.includes('yunxi') || n.includes('雲希') || n.includes('hanhan') || n.includes('kangkang') || n.includes('male')) return 'zh-CN-YunxiNeural';
+      if (n.includes('yunjian') || n.includes('雲健') || n.includes('zhiwei') || n.includes('liang')) return 'zh-CN-YunjianNeural';
+
+      // Fallback based on generic keywords if exact match not found
+      if (n.includes('女') || n.includes('female')) return 'zh-TW-HsiaoChenNeural';
+      if (n.includes('男') || n.includes('male')) return 'zh-TW-YunJheNeural';
+
+      return defaultVoice;
+    }
+
+    // WAV encoder
+    function audioBufferToWav(buf) {
+      const nc = buf.numberOfChannels, sr = buf.sampleRate, len = buf.length;
+      const dataLen = len * nc * 2;
+      const ab = new ArrayBuffer(44 + dataLen);
+      const v = new DataView(ab);
+      const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+      ws(0, 'RIFF'); v.setUint32(4, 36 + dataLen, true); ws(8, 'WAVE');
+      ws(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+      v.setUint16(22, nc, true); v.setUint32(24, sr, true);
+      v.setUint32(28, sr * nc * 2, true); v.setUint16(32, nc * 2, true); v.setUint16(34, 16, true);
+      ws(36, 'data'); v.setUint32(40, dataLen, true);
+      let off = 44;
+      for (let i = 0; i < len; i++) for (let c = 0; c < nc; c++) {
+        const s = buf.getChannelData(c)[i];
+        v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2;
+      }
+      return ab;
+    }
+
+    async function downloadWithServer(items) {
+      const rate = parseFloat($('rate').value);
+      const pauseMs = parseInt($('pause').value);
+      const qPauseSec = parseFloat($('qPause').value);
+      const readQNum = $('readQuestionNum').checked;
+
+      // 取得網頁上設定的音調
+      const pA = parseFloat($('pitchA').value);
+      const pB = parseFloat($('pitchB').value);
+      const pN = parseFloat($('pitchN').value);
+
+      // 動態對應使用者選的聲音到 edge-tts
+      const vA = getEdgeVoiceName('voiceA', 'zh-TW-HsiaoChenNeural');
+      const vB = getEdgeVoiceName('voiceB', 'zh-CN-YunxiNeural');
+      const vN = getEdgeVoiceName('voiceN', 'zh-TW-HsiaoYuNeural');
+
+      // Build segments list
+      const segments = [];
+      for (const item of items) {
+        if (item.type === 'question-num' && !readQNum) continue;
+        let text = null, voice = vN, pitch = pN;
+        if (item.type === 'question-num') { text = item.text + '。'; }
+        else if (item.type === 'speech') {
+          text = item.text;
+          voice = item.speaker === 'A' ? vA : vB;
+          pitch = item.speaker === 'A' ? pA : pB;
+        }
+        else if (item.type === 'question') { text = '問。' + item.text; }
+        else if (item.type === 'option') { text = item.label + '。' + item.text; }
+
+        if (text) segments.push({ text, voice, rate, pitch, pauseMs, type: item.type });
+      }
+
+      showStatus(`⏳ 使用 edge-tts 生成 ${segments.length} 段音訊中...`, 'info');
+      $('downloadBtn').disabled = true;
+
+      let audios;
+      try {
+        const res = await fetch(TTS_SERVER + '/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ segments }),
+        });
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        audios = json.audios; // array of base64 MP3
+      } catch (e) {
+        $('downloadBtn').disabled = false;
+        return showStatus('TTS 伺服器錯誤：' + e.message, 'error');
+      }
+
+      showStatus('⏳ 合併音訊中...', 'info');
+
+      // Decode each MP3 and concatenate AudioBuffers
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      const buffers = [];
+      const silenceSamples = Math.floor(ctx.sampleRate * pauseMs / 1000);
+      const qSilenceSamples = Math.floor(ctx.sampleRate * qPauseSec);
+
+      for (let i = 0; i < audios.length; i++) {
+        const b64 = audios[i];
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let j = 0; j < binary.length; j++) bytes[j] = binary.charCodeAt(j);
+        const decoded = await ctx.decodeAudioData(bytes.buffer);
+        buffers.push(decoded);
+
+        // Add silence after each segment
+        const seg = segments[i];
+        const silLen = seg.type === 'question-gap' ? qSilenceSamples :
+          seg.type === 'question' ? Math.floor(ctx.sampleRate * 1.0) :
+            seg.type === 'option' ? Math.floor(silenceSamples * 0.8) : silenceSamples;
+        if (silLen > 0) {
+          buffers.push(new AudioBuffer({ numberOfChannels: 1, length: silLen, sampleRate: ctx.sampleRate }));
+        }
+      }
+
+      // Render to OfflineAudioContext
+      const totalLen = buffers.reduce((s, b) => s + b.length, 0);
+      const offline = new OfflineAudioContext(1, totalLen, ctx.sampleRate);
+      let offset = 0;
+      for (const b of buffers) {
+        // Mix down to mono
+        const src = offline.createBufferSource();
+        const mono = new AudioBuffer({ numberOfChannels: 1, length: b.length, sampleRate: b.sampleRate });
+        const data = mono.getChannelData(0);
+        for (let c = 0; c < b.numberOfChannels; c++) {
+          const ch = b.getChannelData(c);
+          for (let j = 0; j < ch.length; j++) data[j] += ch[j] / b.numberOfChannels;
+        }
+        src.buffer = mono;
+        src.connect(offline.destination);
+        src.start(offset / ctx.sampleRate);
+        offset += b.length;
+      }
+
+      const rendered = await offline.startRendering();
+      ctx.close();
+
+      const wav = audioBufferToWav(rendered);
+      const blob = new Blob([wav], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const date = new Date().toISOString().slice(0, 10);
+      const filename = `華語聽力_${date}.wav`;
+      
+      $('finalAudio').src = url;
+      $('audioPlayerContainer').style.display = 'block';
+      $('saveFileBtn').onclick = () => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+      };
+      
+      $('downloadBtn').disabled = false;
+      showStatus('✓ 已生成高品質音檔！請在下方播放器試聽，或點擊儲存下載。', 'success');
+    }
+
+    // ============ Download audio ============
+    $('downloadBtn').onclick = async () => {
+      hideStatus();
+      const text = $('dialogueInput').value.trim();
+      if (!text) return showStatus('請先輸入內容。', 'error');
+      const items = parseInput(text);
+      if (items.filter(i => i.type === 'speech' || i.type === 'question' || i.type === 'option').length === 0) {
+        return showStatus('未偵測到有效內容。', 'error');
+      }
+
+      // ── 優先使用本地 TTS 伺服器（tts_server.py）──
+      showStatus('⏳ 偵測本地 TTS 伺服器...', 'info');
+      const serverOk = await checkTTSServer();
+      if (serverOk) {
+        return downloadWithServer(items);
+      }
+      showStatus('（未偵測到 TTS 伺服器，改用分頁錄音模式）', 'info');
+      await delay(800);
+
+      // ── 回退：getDisplayMedia 錄音模式 ──
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        return showStatus('您的瀏覽器不支援音訊錄製。請執行 tts_server.py 或改用 Edge。', 'error');
+      }
+
+      // Show guide modal and wait for user confirmation
+      const proceed = await showRecordModal();
+      if (!proceed) return;
+
+      const fastRecord = $('fastRecord').checked;
+      const rate = parseFloat($('rate').value) * (fastRecord ? 1.5 : 1);
+      const pauseMs = parseInt($('pause').value) / (fastRecord ? 1.5 : 1);
+      const qPauseSec = parseFloat($('qPause').value) / (fastRecord ? 1.5 : 1);
+      const totalEst = estimateDuration(items, rate, pauseMs, qPauseSec);
+
+      showStatus(
+        `預估錄製時間：<strong>${formatTime(totalEst)}</strong>${fastRecord ? '（快速模式）' : ''}<br>` +
+        `彈出視窗 → 選「此分頁」→ <strong>勾選「分享分頁音訊」</strong> → 分享`,
+        'info'
+      );
+      await delay(800);
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { width: 1, height: 1 },
+          audio: { autoGainControl: false, echoCancellation: false, noiseSuppression: false },
+          preferCurrentTab: true
+        });
+      } catch (err) {
+        if (err.name === 'NotAllowedError') return showStatus('已取消錄製。', 'info');
+        return showStatus('錯誤：' + err.message, 'error');
+      }
+
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length === 0) {
+        stream.getTracks().forEach(t => t.stop());
+        return showStatus(
+          '❌ 未擷取到音訊軌道。請重試並確認已選「<strong>Chrome/Edge 分頁</strong>」且已勾選「<strong>分享分頁音訊</strong>」。',
+          'error'
+        );
+      }
+      stream.getVideoTracks().forEach(t => t.stop());
+      const audioStream = new MediaStream(audioTracks);
+
+      // ---- Audio level verification ----
+      showStatus('🔊 正在驗證音訊擷取（播出測試語句，請稍候）...', 'info');
+      const audioOk = await checkAudioLevel(audioStream);
+      if (!audioOk) {
+        // Show warning in the re-opened modal
+        const verifyBar = $('verifyBar');
+        verifyBar.className = 'verify-bar warn show';
+        verifyBar.innerHTML =
+          '⚠ 偵測到音訊訊號幾乎為零。可能原因：<br>' +
+          '① 未勾選「分享分頁音訊」&nbsp;&nbsp;② 選的不是此分頁&nbsp;&nbsp;③ 系統靜音<br>' +
+          '<strong>建議停止並重新操作。</strong> 若確認已正確設定，可忽略此警告繼續錄製。';
+        $('modalStartBtn').textContent = '忽略警告，繼續錄製';
+        $('modalCancelBtn').textContent = '停止，重新設定';
+        const continueAnyway = await showRecordModal();
+        verifyBar.className = 'verify-bar';
+        $('modalStartBtn').textContent = '開始錄製 →';
+        $('modalCancelBtn').textContent = '取消';
+        if (!continueAnyway) {
+          audioTracks.forEach(t => t.stop());
+          return showStatus('已停止。請重新點「⬇ 下載音檔」並確認步驟。', 'info');
+        }
+      } else {
+        showStatus('✓ 音訊擷取正常，開始錄製...', 'success');
+        await delay(400);
+      }
+
+      // ---- Actual recording ----
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'audio/webm';
+      const recorder = new MediaRecorder(audioStream, { mimeType });
+      const chunks = [];
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0, 10);
+        const filename = `華語聽力_${date}${fastRecord ? '_fast' : ''}.webm`;
+        a.href = url;
+        a.download = filename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        audioTracks.forEach(t => t.stop());
+        isRecording = false;
+        $('progressCard').classList.remove('show');
+        showStatus(
+          `✓ 已下載 <strong>${filename}</strong> · WebM 格式可用 VLC 播放，` +
+          `或上傳 <a href="https://cloudconvert.com/webm-to-mp3" target="_blank" style="color:var(--accent);">cloudconvert.com</a> 轉成 MP3。`,
+          'success'
+        );
+      };
+
+      isRecording = true;
+      recorder.start();
+      showStatus('● 錄製中... 請勿關閉此分頁或播放其他音訊', 'info');
+      await playSequence(items, { fastRecord });
+      await delay(800);
+      recorder.stop();
+    };
+
+    // ============ Init ============
+    $('dialogueInput').value = SAMPLE_TEXT;
+  </script>
+</body>
+
+</html>
