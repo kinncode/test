@@ -1,0 +1,140 @@
+:root {
+  --paper: #f6f1e6;
+  --card: #fffdf8;
+  --ink: #1f2430;
+  --mute: #6b7280;
+  --faint: #d8d0bf;
+  --blue: #2563eb;
+  --blue-soft: #dbe7ff;
+  --orange: #e2860b;
+  --orange-soft: #fde9cc;
+  --red: #d9412e;
+  --red-soft: #fbdcd6;
+  --teal: #0f9d8a;
+  --teal-soft: #d2f0ea;
+  --green: #2e9e4f;
+  --green-soft: #d9f2df;
+  --purple: #7c4ddb;
+  --purple-soft: #e9e0fb;
+  --yellow: #f4c542;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #0d0f14; overflow: hidden; }
+
+#stage {
+  position: absolute; left: 0; top: 0;
+  width: 1920px; height: 1080px; overflow: hidden;
+  background: var(--paper);
+  font-family: 'Noto Sans TC', 'Inter', sans-serif; font-weight: 500;
+  color: var(--ink);
+  transform-origin: 0 0;
+}
+#bg {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(31, 36, 48, .085) 1.3px, transparent 1.6px);
+  background-size: 34px 34px;
+}
+#bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(120, 100, 60, .10) 100%);
+}
+
+.scene { position: absolute; inset: 0; }
+.abs { position: absolute; }
+.hand { font-family: 'LXGW WenKai TC', 'Noto Sans TC', serif; }
+.mono { font-family: 'DejaVu Sans Mono', 'Noto Sans TC', monospace; }
+.en { font-family: 'Inter', sans-serif; }
+
+svg.layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+svg text { font-family: 'Noto Sans TC', 'Inter', sans-serif; }
+
+.ink { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+
+.card {
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 7px 7px 0 rgba(31, 36, 48, .14);
+}
+.pill {
+  display: inline-block; padding: 6px 18px; border-radius: 999px;
+  border: 2.5px solid var(--ink); background: var(--card);
+  font-weight: 700;
+}
+.h1 { font-family: 'LXGW WenKai TC', serif; font-weight: 700; font-size: 66px; line-height: 1.2; }
+.h2 { font-family: 'LXGW WenKai TC', serif; font-weight: 700; font-size: 50px; line-height: 1.25; }
+.h3 { font-family: 'LXGW WenKai TC', serif; font-weight: 700; font-size: 38px; line-height: 1.3; }
+.body { font-size: 30px; line-height: 1.5; }
+.small { font-size: 24px; line-height: 1.45; color: var(--mute); }
+.center { text-align: center; }
+.hl { background: linear-gradient(transparent 58%, rgba(244, 197, 66, .55) 58%); padding: 0 4px; }
+
+.c-blue { color: var(--blue); } .c-orange { color: var(--orange); } .c-red { color: var(--red); }
+.c-teal { color: var(--teal); } .c-green { color: var(--green); } .c-purple { color: var(--purple); }
+.c-mute { color: var(--mute); }
+
+.tag {
+  display: inline-block; padding: 4px 14px; border-radius: 10px; font-weight: 700; font-size: 24px;
+}
+.t-blue { background: var(--blue-soft); color: var(--blue); }
+.t-orange { background: var(--orange-soft); color: #b5650a; }
+.t-red { background: var(--red-soft); color: var(--red); }
+.t-teal { background: var(--teal-soft); color: #0b7a6b; }
+.t-green { background: var(--green-soft); color: #23793c; }
+.t-purple { background: var(--purple-soft); color: var(--purple); }
+.t-gray { background: #ebe5d8; color: #555; }
+
+.figure {
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 14px;
+  box-shadow: 7px 7px 0 rgba(31, 36, 48, .14);
+}
+.figure img { display: block; width: 100%; height: auto; }
+.figcap { font-size: 22px; color: var(--mute); margin-top: 8px; text-align: center; }
+
+/* chrome */
+#chrome { position: absolute; inset: 0; pointer-events: none; }
+#chap {
+  position: absolute; left: 44px; top: 34px; font-size: 26px; font-weight: 700;
+  padding: 8px 22px 8px 14px; border-radius: 999px; background: var(--card);
+  border: 2.5px solid var(--ink); display: flex; align-items: center; gap: 12px;
+}
+#chap .num {
+  display: inline-flex; width: 38px; height: 38px; border-radius: 50%; background: var(--ink); color: var(--paper);
+  align-items: center; justify-content: center; font-size: 22px;
+}
+#brand { position: absolute; right: 48px; top: 42px; font-size: 22px; color: var(--mute); font-weight: 700; letter-spacing: 1px; }
+#prog { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--ink); opacity: .75; }
+#ticks { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; }
+#ticks i { position: absolute; bottom: 0; width: 3px; height: 12px; background: var(--ink); opacity: .35; }
+
+#subs {
+  position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%);
+  max-width: 1780px; width: max-content;
+  padding: 12px 30px; border-radius: 16px;
+  background: rgba(255, 253, 248, .93); border: 2px solid rgba(31, 36, 48, .18);
+  box-shadow: 0 6px 18px rgba(60, 50, 30, .12);
+  font-size: 37px; line-height: 1.42; font-weight: 500; text-align: center; color: var(--ink);
+}
+#subs:empty { display: none; }
+.mcal { font-family: 'KaTeX_Caligraphic', serif; font-style: normal; }
+#subs sub, .sb { font-size: 0.7em; vertical-align: -0.25em; line-height: 0; }
+
+/* chapter card */
+#chapcard { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+#chapcard .k { font-size: 30px; letter-spacing: 8px; color: var(--mute); font-weight: 700; }
+#chapcard .n { font-family: 'LXGW WenKai TC', serif; font-weight: 700; font-size: 150px; line-height: 1; margin: 14px 0 10px; }
+#chapcard .t { font-family: 'LXGW WenKai TC', serif; font-weight: 700; font-size: 84px; }
+#chapcard .bar { height: 8px; background: var(--yellow); border-radius: 4px; margin-top: 22px; }
+
+.katex { font-size: 1.15em; }
+.node { position: absolute; border-radius: 50%; border: 3.5px solid var(--ink); background: var(--card); }
+table.tb { border-collapse: collapse; font-size: 28px; }
+table.tb td, table.tb th { padding: 10px 22px; border-bottom: 2px solid var(--faint); text-align: center; }
+table.tb th { font-weight: 700; border-bottom: 3px solid var(--ink); }
+.abs { white-space: nowrap; }
+.card, .wrap, .figure { white-space: normal; }
+.katex { font-family: KaTeX_Main, 'Noto Sans TC', 'Times New Roman', serif; }
+.katex .text, .katex .mord.text { font-family: KaTeX_Main, 'Noto Sans TC', serif; }
+
+.bigk .tag .katex { font-size: 1.35em; }

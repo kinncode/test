@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>風險態度與維修決策 論文導讀</title>
+<link rel="stylesheet" href="node_modules/katex/dist/katex.min.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-sans-tc/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-sans-tc/500.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-sans-tc/700.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-sans-tc/900.css">
+<link rel="stylesheet" href="node_modules/lxgw-wenkai-tc-webfont/lxgwwenkaitc-regular.css">
+<link rel="stylesheet" href="node_modules/lxgw-wenkai-tc-webfont/lxgwwenkaitc-bold.css">
+<link rel="stylesheet" href="style.css">
+<script src="node_modules/katex/dist/katex.min.js"></script>
+<script src="timing.js"></script>
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="scenes/a_intro.js"></script>
+<script src="scenes/b_theory.js"></script>
+<script src="scenes/c_model.js"></script>
+<script src="scenes/d_results.js"></script>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="scenes"></div>
+  <div id="chrome">
+    <div id="chap"></div>
+    <div id="brand">風險態度 × 維修決策 · 論文導讀</div>
+    <div id="chapcard"></div>
+    <div id="subs"></div>
+    <div id="ticks"></div>
+    <div id="prog"></div>
+  </div>
+</div>
+<script>
+(async () => {
+  boot();
+  const imgs = [...document.images].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; }));
+  await Promise.all(imgs);
+  await document.fonts.ready;
+  const q = new URLSearchParams(location.search);
+  window.__ready = true;
+  if (q.has('render')) { seek(0); return; }
+  // preview mode: fit to window, play with audio (space = play/pause, ←/→ = ±5 s)
+  const st = document.getElementById('stage');
+  const fit = () => { const k = Math.min(innerWidth / 1920, innerHeight / 1080); st.style.transform = `translate(${(innerWidth - 1920 * k) / 2}px,${(innerHeight - 1080 * k) / 2}px) scale(${k})`; };
+  addEventListener('resize', fit); fit();
+  const au = new Audio('out/audio.m4a');
+  au.currentTime = +(q.get('t') || 0);
+  let t0 = performance.now() / 1000 - au.currentTime, playing = false;
+  const now = () => playing && !au.paused ? au.currentTime : (playing ? performance.now() / 1000 - t0 : au.currentTime);
+  const loop = () => { seek(now()); requestAnimationFrame(loop); };
+  addEventListener('keydown', e => {
+    if (e.code === 'Space') { if (playing) { au.pause(); playing = false; } else { t0 = performance.now() / 1000 - au.currentTime; au.play().catch(() => {}); playing = true; } }
+    if (e.code === 'ArrowRight') au.currentTime += 5;
+    if (e.code === 'ArrowLeft') au.currentTime = Math.max(0, au.currentTime - 5);
+  });
+  addEventListener('click', () => { if (!playing) { t0 = performance.now() / 1000 - au.currentTime; au.play().catch(() => {}); playing = true; } });
+  loop();
+})();
+</script>
+</body>
+</html>

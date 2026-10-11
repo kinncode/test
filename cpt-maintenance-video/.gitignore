@@ -1,0 +1,4 @@
+node_modules/
+build/
+out/audio.m4a
+__pycache__/
